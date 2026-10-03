@@ -1,0 +1,72 @@
+export type ProductStatus = 'AVAILABLE' | 'HIDDEN'
+export type OrderStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED'
+
+export interface Product {
+  id: number
+  name: string
+  description: string
+  price: number
+  image: string | null
+  status: ProductStatus
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ProductInput {
+  name: string
+  description: string
+  price: number
+  status: ProductStatus
+}
+
+export interface OrderItem {
+  id: number
+  productId: number | null
+  productName: string
+  unitPrice: number
+  quantity: number
+  subtotal: number
+}
+
+export interface Order {
+  id: number
+  orderCode: string
+  totalAmount: number
+  paymentMethod: string
+  orderStatus: OrderStatus
+  createdAt: string
+  updatedAt: string
+  items: OrderItem[]
+}
+
+export interface PaymentMethod {
+  type: string
+  code: string
+  name: string
+}
+
+export interface QRResult {
+  orderId: number
+  orderCode: string
+  amount: number
+  paymentMethod: string
+  qrCode: string
+  bankName?: string
+  accountName?: string
+}
+
+export interface Stats {
+  totalProducts: number
+  totalOrders: number
+  pendingOrders: number
+  expectedRevenue: number
+  recentOrders: Order[]
+}
+
+export interface CartItem {
+  productId: number
+  name: string
+  price: number
+  image: string | null
+  quantity: number
+}

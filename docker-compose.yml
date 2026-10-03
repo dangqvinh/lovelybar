@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lovelybar
+      POSTGRES_PASSWORD: lovelybar
+      POSTGRES_DB: lovelybar
+    volumes: [pgdata:/var/lib/postgresql/data]
+    ports: ["5432:5432"]
+
+  api:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgres://lovelybar:lovelybar@db:5432/lovelybar?sslmode=disable
+      UPLOAD_DIR: /data/uploads
+    volumes: [uploads:/data/uploads]
+    ports: ["8080:8080"]
+    depends_on: [db]
+
+volumes:
+  pgdata:
+  uploads:
