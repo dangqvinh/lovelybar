@@ -3,21 +3,127 @@
 @tailwind utilities;
 
 @layer base {
-  html { scroll-behavior: smooth; }
-  body { @apply bg-blush font-sans text-ink antialiased; }
-  :focus-visible { @apply outline-none ring-2 ring-pink-400 ring-offset-2 ring-offset-blush; }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-blush font-sans text-ink antialiased;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-pink-400 ring-offset-2 ring-offset-blush;
+  }
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
 @layer components {
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50; }
-  .btn-primary { @apply btn bg-pink-500 text-white shadow-soft hover:bg-pink-600; }
-  .btn-soft { @apply btn bg-pink-100 text-pink-700 hover:bg-pink-200; }
-  .btn-outline { @apply btn border border-line bg-white text-ink hover:border-pink-300 hover:text-pink-700; }
-  .btn-danger { @apply btn bg-white text-red-600 border border-red-200 hover:bg-red-50; }
-  .card { @apply rounded-3xl border border-line bg-white shadow-soft; }
-  .input { @apply w-full rounded-2xl border border-line bg-white px-4 py-2.5 text-sm placeholder:text-ink-soft/60 focus:border-pink-400 focus:outline-none focus:ring-2 focus:ring-pink-200; }
-  .label { @apply mb-1.5 block text-sm font-medium; }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-pink-500 text-white shadow-soft hover:bg-pink-600;
+  }
+  .btn-soft {
+    @apply btn bg-pink-100 text-pink-700 hover:bg-pink-200;
+  }
+  .btn-outline {
+    @apply btn border border-line bg-white text-ink hover:border-pink-300 hover:text-pink-700;
+  }
+  .btn-danger {
+    @apply btn bg-white text-red-600 border border-red-200 hover:bg-red-50;
+  }
+  .card {
+    @apply rounded-3xl border border-line bg-white shadow-soft;
+  }
+  .input {
+    @apply w-full rounded-2xl border border-line bg-white px-4 py-2.5 text-sm placeholder:text-ink-soft/60 focus:border-pink-400 focus:outline-none focus:ring-2 focus:ring-pink-200;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium;
+  }
+}
+
+@media (max-width: 639px) {
+  .btn {
+    min-height: 44px;
+    line-height: 1.25;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  .card {
+    border-radius: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .shop-nav > a {
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+  }
+
+  .shop-nav > a:last-child {
+    padding-right: 0.5rem !important;
+    padding-left: 0.5rem !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .shop-header-inner {
+    gap: 0.5rem;
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
+  }
+
+  .shop-header-inner > a:first-child {
+    gap: 0.375rem;
+  }
+
+  .shop-header-inner > a:first-child > span:first-child {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .shop-header-inner > a:first-child > span:last-child {
+    font-size: 1.125rem;
+  }
+
+  .shop-nav {
+    gap: 0;
+  }
+
+  .shop-nav > a {
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+  }
+
+  .shop-nav > a:first-child {
+    display: none;
+  }
+
+  .shop-nav > a:last-child {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 359px) {
+  main {
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
+  }
+
+  .product-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

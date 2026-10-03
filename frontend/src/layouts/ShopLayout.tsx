@@ -32,29 +32,32 @@ export default function ShopLayout() {
   }, [pathname]);
 
   const navCls = ({ isActive }: { isActive: boolean }) =>
-    `rounded-full px-4 py-2 text-sm font-semibold transition ${isActive ? "bg-pink-100 text-pink-700" : "text-ink-soft hover:text-pink-700"}`;
+    `whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${isActive ? "bg-pink-100 text-pink-700" : "text-ink-soft hover:text-pink-700"}`;
   const showFloating =
     count > 0 && pathname !== "/cart" && pathname !== "/checkout";
 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-30 border-b border-line bg-blush/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+        <div className="shop-header-inner mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <Logo />
-          <nav className="flex items-center gap-1" aria-label="Main">
+          <nav
+            className="shop-nav flex items-center gap-1"
+            aria-label="Điều hướng chính"
+          >
             <NavLink to="/" end className={navCls}>
-              Home
+              Trang chủ
             </NavLink>
             <NavLink to="/products" className={navCls}>
-              Products
+              Sản phẩm
             </NavLink>
             <Link
               to="/cart"
               className="btn-soft relative ml-1 !px-4"
-              aria-label={`Cart, ${count} items`}
+              aria-label={`Giỏ hàng, ${count} sản phẩm`}
             >
               <CartIcon />
-              <span className="hidden sm:inline">Cart</span>
+              <span className="hidden sm:inline">Giỏ hàng</span>
               {count > 0 && (
                 <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-pink-500 px-1 text-xs font-bold text-white">
                   {count > 99 ? "99+" : count}
@@ -70,17 +73,17 @@ export default function ShopLayout() {
       </main>
 
       <footer className="border-t border-line py-6 text-center text-sm text-ink-soft">
-        LovelyBar · the company shop
+        LovelyBar · cửa hàng nội bộ
       </footer>
 
       {showFloating && (
         <Link
           to="/cart"
           className="btn-primary fixed bottom-5 right-5 z-30 !px-5 !py-3 shadow-lift sm:hidden"
-          aria-label={`Open cart, ${count} items`}
+          aria-label={`Mở giỏ hàng, ${count} sản phẩm`}
         >
           <CartIcon />
-          {count} in cart
+          {count} sản phẩm
         </Link>
       )}
     </div>
