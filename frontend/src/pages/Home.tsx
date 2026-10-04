@@ -30,7 +30,7 @@ export default function Home() {
         <div className="relative grid items-center gap-10 md:grid-cols-2">
           <div>
             <h1 className="text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
-              Món ngon nhỏ xinh, dành riêng cho đội ngũ.
+              Minibar C302
             </h1>
             <p className="mt-4 max-w-md text-pink-50">
               LovelyBar là cửa hàng nội bộ của chúng ta. Chọn món yêu thích,

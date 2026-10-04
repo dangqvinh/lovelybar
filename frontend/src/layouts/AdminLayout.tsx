@@ -1,9 +1,24 @@
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import Logo from "../components/Logo";
+import { supabase } from "../lib/supabase";
 
 export default function AdminLayout() {
+  const navigate = useNavigate();
   const cls = ({ isActive }: { isActive: boolean }) =>
     `whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${isActive ? "bg-pink-500 text-white" : "text-ink-soft hover:bg-pink-100 hover:text-pink-700"}`;
+
+  async function handleLogout() {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast.success("Đã đăng xuất");
+      navigate('/admin/login', { replace: true });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể đăng xuất');
+    }
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="border-b border-line bg-white">
@@ -27,12 +42,16 @@ export default function AdminLayout() {
             <NavLink to="/admin/orders" className={cls}>
               Đơn hàng
             </NavLink>
-            <Link
-              to="/"
-              className="whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold text-ink-soft hover:text-pink-700"
+            <NavLink to="/admin/reports" className={cls}>
+              Báo cáo
+            </NavLink>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="whitespace-nowrap rounded-full border border-line px-4 py-2 text-sm font-semibold text-ink-soft hover:border-pink-300 hover:text-pink-700"
             >
-              Xem cửa hàng
-            </Link>
+              Đăng xuất
+            </button>
           </nav>
         </div>
       </header>
@@ -40,7 +59,7 @@ export default function AdminLayout() {
         <Outlet />
       </main>
       <footer className="border-t border-line py-4 text-center text-xs text-ink-soft">
-        Khu vực quản trị này chưa có đăng nhập. Không công khai trên Internet.
+        Chỉ quản trị viên mới có quyền truy cập khu vực này.
       </footer>
     </div>
   );

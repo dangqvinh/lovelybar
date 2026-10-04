@@ -50,7 +50,7 @@ func (s *Store) CreateOrder(ctx context.Context, items []model.OrderItem, total 
 	if err != nil {
 		return model.Order{}, err
 	}
-	code := fmt.Sprintf("LB%s%03d", day.Format("20060102"), n)
+	code := formatOrderCode(day, n)
 
 	order, err := scanOrder(tx.QueryRow(ctx,
 		`INSERT INTO orders (order_code, total_amount, payment_method) VALUES ($1,$2,$3) RETURNING `+orderCols,
@@ -71,6 +71,10 @@ func (s *Store) CreateOrder(ctx context.Context, items []model.OrderItem, total 
 		order.Items = append(order.Items, saved)
 	}
 	return order, tx.Commit(ctx)
+}
+
+func formatOrderCode(day time.Time, sequence int) string {
+	return fmt.Sprintf("LB%s%03d", day.Format("20060102"), sequence)
 }
 
 func (s *Store) GetOrderByCode(ctx context.Context, code string) (model.Order, error) {

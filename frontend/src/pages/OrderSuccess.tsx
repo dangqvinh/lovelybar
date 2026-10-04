@@ -1,11 +1,8 @@
-import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import QrPanel from "../components/QrPanel";
 import { ErrorState, Spinner } from "../components/States";
 import StatusBadge from "../components/StatusBadge";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../services/api";
-import type { QRResult } from "../types";
 import { formatDate, formatVND } from "../utils/format";
 
 export default function OrderSuccess() {
@@ -16,18 +13,6 @@ export default function OrderSuccess() {
     error,
     reload,
   } = useAsync(() => api.order(code), [code]);
-  const [qr, setQr] = useState<QRResult | null>(null);
-  const [qrError, setQrError] = useState<string | null>(null);
-
-  // QR generation is repeatable: it always uses the amount stored on the order.
-  useEffect(() => {
-    if (!order || order.orderStatus === "CANCELLED") return;
-    api
-      .generateQR(order.orderCode, order.paymentMethod || "BANK")
-      .then(setQr)
-      .catch((e: Error) => setQrError(e.message));
-  }, [order]);
-
   if (loading) return <Spinner label="Đang tải đơn hàng" />;
   if (error || !order)
     return (
@@ -40,10 +25,7 @@ export default function OrderSuccess() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="text-center">
-        <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-pink-100 text-2xl text-pink-600">
-          ✓
-        </div>
-        <h1 className="text-3xl font-extrabold">Tạo đơn hàng thành công!</h1>
+        <h1 className="text-3xl font-extrabold">Chi tiết đơn hàng</h1>
         <p className="mt-2 text-ink-soft">
           Đơn hàng <span className="font-bold text-ink">{order.orderCode}</span>{" "}
           · {formatDate(order.createdAt)}
@@ -71,7 +53,9 @@ export default function OrderSuccess() {
         <dl className="mt-4 grid grid-cols-2 gap-y-2 text-sm">
           <dt className="text-ink-soft">Thanh toán</dt>
           <dd className="text-right font-semibold">
-            {qr?.bankName ?? "Chuyển khoản (QR)"}
+            {order.paymentMethod === "BANK"
+              ? "Chuyển khoản ngân hàng"
+              : order.paymentMethod || "Chưa chọn"}
           </dd>
           <dt className="text-ink-soft">Trạng thái đơn hàng</dt>
           <dd className="text-right">
@@ -84,18 +68,17 @@ export default function OrderSuccess() {
         <p className="rounded-2xl bg-gray-100 px-4 py-3 text-center text-sm">
           Đơn hàng này đã bị hủy. Vui lòng không chuyển khoản cho đơn hàng này.
         </p>
-      ) : qr ? (
-        <QrPanel qr={qr} />
-      ) : qrError ? (
-        <ErrorState message={qrError} />
+      ) : order.orderStatus === "COMPLETED" ? (
+        <p className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-center text-sm text-green-900">
+          Cửa hàng đã xác nhận nhận được thanh toán cho đơn hàng này.
+        </p>
       ) : (
-        <Spinner label="Đang chuẩn bị mã QR" />
+        <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-900">
+          Đơn hàng đã được tạo và đang chờ thanh toán. Việc tạo đơn hoặc mã QR
+          không xác nhận đã nhận tiền. Cửa hàng sẽ kiểm tra giao dịch thủ công
+          rồi cập nhật trạng thái.
+        </p>
       )}
-
-      <p className="text-center text-xs text-ink-soft">
-        Mã QR chỉ hỗ trợ chuyển khoản. Cửa hàng sẽ kiểm tra thanh toán thủ công
-        bằng mã đơn hàng của bạn.
-      </p>
       <div className="text-center">
         <Link to="/products" className="btn-soft">
           Quay lại sản phẩm

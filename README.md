@@ -31,34 +31,39 @@ npm run dev                               # http://localhost:5173  (admin: /admi
 
 Hoặc chạy cả API + DB: `docker compose up --build`.
 
-## Cấu hình thanh toán (`backend/.env`)
+## Cấu hình thanh toán (Supabase Edge Function)
 
 ```env
-PAYMENT_BANK_CODE=VCB          # VCB MB BIDV TCB ACB CTG VPB TPB STB VIB HDB SHB MSB OCB LPB VBA
+PAYMENT_BANK_CODE=VCB
 PAYMENT_BANK_ACCOUNT=123456789
 PAYMENT_BANK_NAME=LOVELYBAR
-# PAYMENT_BANK_BIN=            # chỉ cần nếu ngân hàng không có trong danh sách
+# PAYMENT_BANK_BIN=970436       # chỉ đặt nếu cần ghi đè BIN
 ```
 
-Chỉ có **một** tài khoản nhận tiền. Các biến này chỉ ở backend; frontend chỉ nhận
-`{type, code, name}` của phương thức thanh toán.
+Đặt các giá trị bằng `npx supabase secrets set ...` hoặc tại Supabase Dashboard →
+Edge Functions → Secrets. Chỉ có **một** tài khoản nhận tiền. Các secrets không nằm
+trong frontend; riêng số tài khoản được nhúng trong payload QR để ngân hàng biết nơi
+chuyển tiền. Ảnh QR được dựng ngay trong trình duyệt, không gửi payload tới dịch vụ tạo
+QR bên thứ ba.
 
 ### Việc bạn PHẢI làm trước khi dùng thật
 
 1. **Quét thử mã QR bằng app ngân hàng thật.** Test đơn vị chỉ chứng minh payload đúng định dạng (số tiền, CRC),
    không thay thế được bước này. Kiểm tra app tự điền đúng tài khoản, số tiền và nội dung.
-2. Đối chiếu mã BIN trong `backend/internal/payment/banks.go` với danh sách chính thức
+2. Đối chiếu mã BIN với danh sách chính thức
    (https://api.vietqr.io/v2/banks) hoặc đặt `PAYMENT_BANK_BIN`.
+3. Sau khi thay code Edge Function, deploy lại bằng `npx supabase functions deploy payment-qr`.
 
 ## Cách tính tiền và QR
 
 ```text
 Frontend gửi:  [{productId, quantity}]            (không gửi giá, tổng, hay amount)
 Backend:       lấy giá từ DB -> tính subtotal -> tổng -> lưu order + snapshot tên/giá
-QR:            POST /api/payment/qr {orderCode}   -> backend đọc order.totalAmount -> tạo VietQR
+QR:            Edge Function nhận orderCode -> đọc orders.total_amount -> trả payload;
+               frontend tạo ảnh QR cục bộ trong trình duyệt
 ```
 
-Mã đơn dạng `LB20261003001` (ngày theo giờ Việt Nam + số thứ tự trong ngày), đồng thời là nội dung chuyển khoản.
+Mã đơn mới có dạng `LB20261003001` (ngày theo giờ Việt Nam + số thứ tự trong ngày), đồng thời là nội dung chuyển khoản. Mã của các đơn đã tạo trước khi đổi định dạng vẫn được giữ nguyên.
 URL và API công khai dùng `orderCode`, không dùng id số.
 
 ## API
@@ -78,7 +83,7 @@ Response: `{success: true, data}` hoặc `{success: false, message}`.
 ## Cảnh báo bảo mật: `/admin` KHÔNG được bảo vệ
 
 Bất kỳ ai truy cập được URL đều sửa được sản phẩm, đơn hàng và upload ảnh. Chỉ dùng trong mạng nội bộ.
-Nếu đưa lên internet, hãy thêm một lớp bảo vệ *trước* khi mở: Cloudflare Access, HTTP Basic Auth ở reverse proxy,
+Nếu đưa lên internet, hãy thêm một lớp bảo vệ _trước_ khi mở: Cloudflare Access, HTTP Basic Auth ở reverse proxy,
 IP allowlist hoặc đăng nhập admin. Hiện chưa làm các mục này.
 
 Khác: không commit `.env`; backend kiểm tra lại mọi input (frontend chỉ để tiện dùng);
@@ -86,12 +91,12 @@ Khác: không commit `.env`; backend kiểm tra lại mọi input (frontend ch�
 
 ## Triển khai (kiểm tra lại giá và hạn mức hiện tại trước khi chọn)
 
-| Thành phần | Gợi ý |
-|---|---|
-| Frontend (`npm run build`, thư mục `dist`) | Cloudflare Pages, Vercel, Netlify; đặt `VITE_API_URL` và `FRONTEND_ORIGIN` |
-| Backend | Một VPS nhỏ chạy Docker Compose (rẻ, đơn giản); hoặc Render/Fly.io/Railway |
-| PostgreSQL | Cùng VPS, hoặc Neon / Supabase |
-| Ảnh | MVP: đĩa cục bộ (`UPLOAD_DIR`, nhớ gắn volume). Sau này: viết thêm một `storage.Storage` cho Cloudflare R2/S3 |
+| Thành phần                                 | Gợi ý                                                                                                         |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| Frontend (`npm run build`, thư mục `dist`) | Cloudflare Pages, Vercel, Netlify; đặt `VITE_API_URL` và `FRONTEND_ORIGIN`                                    |
+| Backend                                    | Một VPS nhỏ chạy Docker Compose (rẻ, đơn giản); hoặc Render/Fly.io/Railway                                    |
+| PostgreSQL                                 | Cùng VPS, hoặc Neon / Supabase                                                                                |
+| Ảnh                                        | MVP: đĩa cục bộ (`UPLOAD_DIR`, nhớ gắn volume). Sau này: viết thêm một `storage.Storage` cho Cloudflare R2/S3 |
 
 Lưu ý: nếu backend chạy sau reverse proxy, cấu hình trusted proxies của Gin để rate limit thấy đúng IP khách.
 

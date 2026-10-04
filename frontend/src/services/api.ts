@@ -1,14 +1,16 @@
 import type {
   Order,
+  OrderItem,
   OrderStatus,
   PaymentMethod,
   Product,
   ProductInput,
+  ProductSalesReportRow,
   QRResult,
+  SalesReportRow,
   Stats,
 } from "../types";
-
-const BASE = import.meta.env.VITE_API_URL ?? "";
+import { isSupabaseConfigured, supabase } from "../lib/supabase";
 
 export class ApiError extends Error {}
 
@@ -52,82 +54,324 @@ function translateApiMessage(message: string): string {
   return API_ERROR_TRANSLATIONS[message] ?? message;
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  let res: Response;
-  try {
-    res = await fetch(BASE + path, init);
-  } catch {
+function ensureConfigured(): void {
+  if (!isSupabaseConfigured) {
     throw new ApiError(
-      "Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.",
+      "Vui lòng cấu hình VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trước khi sử dụng ứng dụng.",
     );
   }
-  let body: { success?: boolean; message?: string; data?: T } | null = null;
-  try {
-    body = await res.json();
-  } catch {
-    /* non-JSON response */
-  }
-  if (!res.ok || !body?.success) {
-    const message = body?.message ?? "Something went wrong. Please try again.";
-    throw new ApiError(translateApiMessage(message));
-  }
-  return body.data as T;
 }
 
-const json = (method: string, data?: unknown): RequestInit => ({
-  method,
-  headers: { "Content-Type": "application/json" },
-  body: data === undefined ? undefined : JSON.stringify(data),
-});
+async function request<T>(
+  loader: () => Promise<{ data: T | null; error: { message?: string } | null }>,
+): Promise<T> {
+  try {
+    ensureConfigured();
+    const { data, error } = await loader();
+    if (error) {
+      throw new Error(error.message ?? "Something went wrong. Please try again.");
+    }
+    return (data ?? (undefined as unknown as T)) as T;
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? translateApiMessage(error.message)
+        : "Something went wrong. Please try again.";
+    throw new ApiError(message);
+  }
+}
+
+function toProduct(row: any): Product {
+  return {
+    id: Number(row.id),
+    name: row.name,
+    description: row.description ?? "",
+    price: Number(row.price ?? 0),
+    image: row.image ?? null,
+    status: row.status,
+    createdAt: row.created_at ?? row.createdAt ?? new Date().toISOString(),
+    updatedAt: row.updated_at ?? row.updatedAt ?? new Date().toISOString(),
+  };
+}
+
+function toOrderItem(row: any): OrderItem {
+  return {
+    id: Number(row.id),
+    productId: row.product_id ?? row.productId ?? null,
+    productName: row.product_name ?? row.productName ?? "",
+    unitPrice: Number(row.unit_price ?? row.unitPrice ?? 0),
+    quantity: Number(row.quantity ?? 0),
+    subtotal: Number(row.subtotal ?? 0),
+  };
+}
+
+function toOrder(row: any): Order {
+  return {
+    id: Number(row.id),
+    orderCode: row.order_code ?? row.orderCode ?? "",
+    totalAmount: Number(row.total_amount ?? row.totalAmount ?? 0),
+    paymentMethod: row.payment_method ?? row.paymentMethod ?? "BANK",
+    orderStatus: row.order_status ?? row.orderStatus ?? "PENDING",
+    createdAt: row.created_at ?? row.createdAt ?? new Date().toISOString(),
+    updatedAt: row.updated_at ?? row.updatedAt ?? new Date().toISOString(),
+    items: Array.isArray(row.items) ? row.items.map(toOrderItem) : [],
+  };
+}
+
+function toStats(row: any): Stats {
+  return {
+    totalProducts: Number(row.totalProducts ?? row.total_products ?? 0),
+    totalOrders: Number(row.totalOrders ?? row.total_orders ?? 0),
+    pendingOrders: Number(row.pendingOrders ?? row.pending_orders ?? 0),
+    expectedRevenue: Number(row.expectedRevenue ?? row.expected_revenue ?? 0),
+    recentOrders: Array.isArray(row.recentOrders)
+      ? row.recentOrders.map(toOrder)
+      : [],
+  };
+}
+
+function toSalesReportRow(row: any): SalesReportRow {
+  return {
+    periodStart: row.periodStart ?? row.period_start,
+    totalOrders: Number(row.totalOrders ?? row.total_orders ?? 0),
+    pendingOrders: Number(row.pendingOrders ?? row.pending_orders ?? 0),
+    completedOrders: Number(row.completedOrders ?? row.completed_orders ?? 0),
+    expectedRevenue: Number(row.expectedRevenue ?? row.expected_revenue ?? 0),
+    confirmedRevenue: Number(row.confirmedRevenue ?? row.confirmed_revenue ?? 0),
+  };
+}
+
+function toProductSalesReportRow(row: any): ProductSalesReportRow {
+  return {
+    productName: row.productName ?? row.product_name ?? "",
+    quantitySold: Number(row.quantitySold ?? row.quantity_sold ?? 0),
+    orderCount: Number(row.orderCount ?? row.order_count ?? 0),
+    confirmedRevenue: Number(row.confirmedRevenue ?? row.confirmed_revenue ?? 0),
+  };
+}
 
 export const api = {
-  // public
-  products: () => request<Product[]>("/api/products"),
-  product: (id: number | string) => request<Product>(`/api/products/${id}`),
-  paymentMethods: () =>
-    request<{ methods: PaymentMethod[] }>("/api/payment/methods").then(
-      (r) => r.methods,
-    ),
-  // Only ids and quantities are sent. The backend prices the order.
-  createOrder: (items: { productId: number; quantity: number }[]) =>
-    request<Order>("/api/orders", json("POST", { items })),
-  order: (code: string) =>
-    request<Order>(`/api/orders/${encodeURIComponent(code)}`),
-  generateQR: (orderCode: string, paymentMethod: string, bankCode?: string) =>
-    request<QRResult>(
-      "/api/payment/qr",
-      json("POST", { orderCode, paymentMethod, bankCode }),
-    ),
+  products: () =>
+    request<Product[]>(async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("status", "AVAILABLE")
+        .order("created_at", { ascending: false });
+      return { data: (data ?? []).map(toProduct), error };
+    }),
 
-  // admin
-  admin: {
-    dashboard: () => request<Stats>("/api/admin/dashboard"),
-    products: () => request<Product[]>("/api/admin/products"),
-    product: (id: number | string) =>
-      request<Product>(`/api/admin/products/${id}`),
-    createProduct: (p: ProductInput) =>
-      request<Product>("/api/admin/products", json("POST", p)),
-    updateProduct: (id: number, p: ProductInput) =>
-      request<Product>(`/api/admin/products/${id}`, json("PUT", p)),
-    deleteProduct: (id: number) =>
-      request<{ deleted: boolean }>(
-        `/api/admin/products/${id}`,
-        json("DELETE"),
-      ),
-    uploadImage: (id: number, file: File) => {
-      const form = new FormData();
-      form.append("image", file);
-      return request<Product>(`/api/admin/products/${id}/image`, {
-        method: "POST",
-        body: form,
+  product: (id: number | string) =>
+    request<Product>(async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", Number(id))
+        .maybeSingle();
+      return { data: data ? toProduct(data) : null, error };
+    }),
+
+  paymentMethods: () =>
+    Promise.resolve([
+      { type: "BANK", code: "BANK", name: "Chuyển khoản ngân hàng (VietQR)" },
+    ] as PaymentMethod[]),
+
+  createOrder: (items: { productId: number; quantity: number }[]) =>
+    request<Order>(async () => {
+      const { data, error } = await supabase.rpc("create_order", { items });
+      return { data: data ? toOrder(data) : null, error };
+    }),
+
+  order: (code: string) =>
+    request<Order>(async () => {
+      const { data, error } = await supabase.rpc("get_order", { code });
+      return { data: data ? toOrder(data) : null, error };
+    }),
+
+  generateQR: async (orderCode: string, paymentMethod: string) => {
+    return request<QRResult>(async () => {
+      const { data, error } = await supabase.functions.invoke("payment-qr", {
+        body: { orderCode, paymentMethod: paymentMethod || "BANK" },
       });
-    },
+      if (error) return { data: null, error };
+      if (!data?.qrPayload || !Number.isSafeInteger(Number(data.amount)) || Number(data.amount) <= 0) {
+        return { data: null, error: { message: "Invalid payment QR response" } };
+      }
+
+      const amount = Number(data.amount);
+      const { default: QRCode } = await import("qrcode");
+      const qrCode = await QRCode.toDataURL(data.qrPayload, {
+        errorCorrectionLevel: "M",
+        margin: 2,
+        width: 640,
+      });
+      return {
+        data: {
+          orderId: Number(data?.orderId ?? 0),
+          orderCode: data?.orderCode ?? orderCode,
+          amount,
+          paymentMethod: data?.paymentMethod ?? paymentMethod ?? "BANK",
+          qrCode,
+          bankName: data?.bankName,
+          accountName: data?.accountName,
+        } satisfies QRResult,
+        error: null,
+      };
+    });
+  },
+
+  admin: {
+    dashboard: () =>
+      request<Stats>(async () => {
+        const { data, error } = await supabase.rpc("admin_dashboard_stats");
+        return { data: data ? toStats(data) : null, error };
+      }),
+
+    salesReport: (granularity: "day" | "month", fromDate: string, toDate: string) =>
+      request<SalesReportRow[]>(async () => {
+        const { data, error } = await supabase.rpc("admin_sales_report", {
+          p_granularity: granularity,
+          p_from_date: fromDate,
+          p_to_date: toDate,
+        });
+        return {
+          data: Array.isArray(data) ? data.map(toSalesReportRow) : null,
+          error,
+        };
+      }),
+
+    topProductsReport: (fromDate: string, toDate: string) =>
+      request<ProductSalesReportRow[]>(async () => {
+        const { data, error } = await supabase.rpc("admin_top_products_report", {
+          p_from_date: fromDate,
+          p_to_date: toDate,
+        });
+        return {
+          data: Array.isArray(data) ? data.map(toProductSalesReportRow) : null,
+          error,
+        };
+      }),
+
+    products: () =>
+      request<Product[]>(async () => {
+        const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
+        return { data: (data ?? []).map(toProduct), error };
+      }),
+
+    product: (id: number | string) =>
+      request<Product>(async () => {
+        const { data, error } = await supabase
+          .from("products")
+          .select("*")
+          .eq("id", Number(id))
+          .maybeSingle();
+        return { data: data ? toProduct(data) : null, error };
+      }),
+
+    createProduct: (p: ProductInput) =>
+      request<Product>(async () => {
+        const { data, error } = await supabase.from("products").insert({
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          status: p.status,
+        }).select("*").single();
+        return { data: data ? toProduct(data) : null, error };
+      }),
+
+    updateProduct: (id: number, p: ProductInput) =>
+      request<Product>(async () => {
+        const { data, error } = await supabase
+          .from("products")
+          .update({
+            name: p.name,
+            description: p.description,
+            price: p.price,
+            status: p.status,
+          })
+          .eq("id", id)
+          .select("*")
+          .single();
+        return { data: data ? toProduct(data) : null, error };
+      }),
+
+    deleteProduct: (id: number) =>
+      request<{ deleted: boolean }>(async () => {
+        const { error } = await supabase.from("products").delete().eq("id", id);
+        return { data: { deleted: !error }, error };
+      }),
+
+    uploadImage: (id: number, file: File) =>
+      request<Product>(async () => {
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}-${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("product-images")
+          .upload(fileName, file, { upsert: true, cacheControl: '3600' });
+        if (uploadError) {
+          return { data: null, error: uploadError };
+        }
+
+        const { data: publicUrlData } = supabase.storage.from("product-images").getPublicUrl(fileName);
+        const { data, error } = await supabase
+          .from("products")
+          .update({ image: publicUrlData.publicUrl })
+          .eq("id", id)
+          .select("*")
+          .single();
+        return { data: data ? toProduct(data) : null, error };
+      }),
+
     deleteImage: (id: number) =>
-      request<Product>(`/api/admin/products/${id}/image`, json("DELETE")),
+      request<Product>(async () => {
+        const { data: current, error: fetchError } = await supabase
+          .from("products")
+          .select("image")
+          .eq("id", id)
+          .single();
+        if (fetchError) return { data: null, error: fetchError };
+
+        const imagePath = current?.image;
+        if (imagePath) {
+          const objectPath = imagePath.split('/').pop() ?? '';
+          if (objectPath) {
+            await supabase.storage.from("product-images").remove([objectPath]);
+          }
+        }
+
+        const { data, error } = await supabase
+          .from("products")
+          .update({ image: null })
+          .eq("id", id)
+          .select("*")
+          .single();
+        return { data: data ? toProduct(data) : null, error };
+      }),
+
     orders: (status = "") =>
-      request<Order[]>(`/api/admin/orders${status ? `?status=${status}` : ""}`),
-    order: (id: number) => request<Order>(`/api/admin/orders/${id}`),
+      request<Order[]>(async () => {
+        const { data, error } = await supabase.rpc("admin_list_orders", {
+          p_status: status || null,
+        });
+        return { data: Array.isArray(data) ? data.map(toOrder) : null, error };
+      }),
+
+    order: (id: number) =>
+      request<Order>(async () => {
+        const { data, error } = await supabase.rpc("admin_get_order", {
+          p_order_id: id,
+        });
+        return { data: data ? toOrder(data) : null, error };
+      }),
+
     setOrderStatus: (id: number, status: OrderStatus) =>
-      request<Order>(`/api/admin/orders/${id}/status`, json("PUT", { status })),
+      request<Order>(async () => {
+        const { data, error } = await supabase.rpc("admin_set_order_status", {
+          p_order_id: id,
+          p_status: status,
+        });
+        return { data: data ? toOrder(data) : null, error };
+      }),
   },
 };
+
+// Keep the original API contract stable for the pages while using Supabase under the hood.

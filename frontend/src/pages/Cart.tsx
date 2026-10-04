@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { api } from "../services/api";
 import ProductImage from "../components/ProductImage";
 import QuantityStepper from "../components/QuantityStepper";
 import { EmptyState } from "../components/States";
@@ -9,7 +11,27 @@ import { formatVND } from "../utils/format";
 export default function Cart() {
   const { items, setQuantity, remove, clear } = useCart();
   const navigate = useNavigate();
+  const [creatingOrder, setCreatingOrder] = useState(false);
   const total = cartTotal(items);
+
+  async function proceedToCheckout() {
+    if (creatingOrder || items.length === 0) return;
+    setCreatingOrder(true);
+    try {
+      const order = await api.createOrder(
+        items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
+      );
+      clear();
+      navigate(`/checkout?order=${encodeURIComponent(order.orderCode)}`);
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setCreatingOrder(false);
+    }
+  }
 
   if (items.length === 0) {
     return (
@@ -87,9 +109,10 @@ export default function Cart() {
           </p>
           <button
             className="btn-primary mt-5 w-full !py-3"
-            onClick={() => navigate("/checkout")}
+            onClick={proceedToCheckout}
+            disabled={creatingOrder}
           >
-            Tiến hành thanh toán
+            {creatingOrder ? "Đang tạo đơn hàng…" : "Tạo đơn & thanh toán"}
           </button>
           <Link
             to="/products"

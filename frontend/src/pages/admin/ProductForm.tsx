@@ -198,13 +198,14 @@ export default function ProductForm() {
               <img
                 src={preview}
                 alt="Ảnh xem trước sản phẩm mới"
-                className="h-28 w-28 rounded-2xl object-cover"
+                className="h-28 w-28 rounded-2xl bg-pink-50 object-contain"
               />
             ) : (
               <ProductImage
                 src={currentImage}
                 name={name || "Sản phẩm"}
                 className="h-28 w-28 rounded-2xl"
+                fit="contain"
               />
             )}
             <div className="flex flex-wrap gap-2">

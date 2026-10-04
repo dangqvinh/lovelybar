@@ -34,6 +34,9 @@ export default function QrPanel({ qr, showOrderLink }: Props) {
         Quét mã QR bằng ứng dụng ngân hàng để chuyển khoản. Vui lòng giữ nguyên
         nội dung chuyển khoản.
       </p>
+      <p className="mt-2 text-sm font-semibold text-amber-800">
+        Mã QR chỉ hỗ trợ chuyển khoản, không xác nhận thanh toán thành công.
+      </p>
       {(qr.bankName || qr.accountName) && (
         <p className="mt-1 text-sm font-semibold">
           {qr.bankName}

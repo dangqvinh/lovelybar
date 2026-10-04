@@ -63,6 +63,22 @@ export interface Stats {
   recentOrders: Order[]
 }
 
+export interface SalesReportRow {
+  periodStart: string
+  totalOrders: number
+  pendingOrders: number
+  completedOrders: number
+  expectedRevenue: number
+  confirmedRevenue: number
+}
+
+export interface ProductSalesReportRow {
+  productName: string
+  quantitySold: number
+  orderCount: number
+  confirmedRevenue: number
+}
+
 export interface CartItem {
   productId: number
   name: string

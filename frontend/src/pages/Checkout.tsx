@@ -1,11 +1,9 @@
-import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import QrPanel from "../components/QrPanel";
 import { EmptyState, ErrorState, Spinner } from "../components/States";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../services/api";
-import { cartTotal, useCart } from "../store/cart";
 import type { Order, QRResult } from "../types";
 import { formatVND } from "../utils/format";
 
@@ -18,15 +16,17 @@ interface Line {
 }
 
 export default function Checkout() {
-  const { items, clear } = useCart();
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
   const orderParam = params.get("order");
 
   const [order, setOrder] = useState<Order | null>(null);
   const [qr, setQr] = useState<QRResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
   const [method, setMethod] = useState("");
+  const qrRequest = useRef<string | null>(null);
   const methods = useAsync(api.paymentMethods);
 
   // Refreshing the page keeps the order because its code is in the URL (the cart itself is memory-only).
@@ -43,59 +43,45 @@ export default function Checkout() {
       setMethod(`${methods.data[0].type}:${methods.data[0].code}`);
   }, [methods.data, method]);
 
-  const lines: Line[] = order
-    ? order.items.map((i) => ({
-        key: i.id,
-        name: i.productName,
-        qty: i.quantity,
-        unit: i.unitPrice,
-        sub: i.subtotal,
-      }))
-    : items.map((i) => ({
-        key: i.productId,
-        name: i.name,
-        qty: i.quantity,
-        unit: i.price,
-        sub: i.price * i.quantity,
-      }));
-  // After the order exists, the total shown is the one calculated by the backend.
-  const total = order ? order.totalAmount : cartTotal(items);
+  useEffect(() => {
+    if (!order || !method || qr || qrError) return;
+    const [type] = method.split(":");
+    if (!type) return;
 
-  async function generate() {
-    const [type, code] = method.split(":");
-    if (!type) return toast.error("Vui lòng chọn phương thức thanh toán");
+    const requestKey = `${order.orderCode}:${method}`;
+    if (qrRequest.current === requestKey) return;
+    qrRequest.current = requestKey;
     setBusy(true);
-    try {
-      let current = order;
-      if (!current) {
-        if (items.length === 0) return toast.error("Giỏ hàng đang trống");
-        current = await api.createOrder(
-          items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-        );
-        setOrder(current);
-        clear();
-        setParams({ order: current.orderCode }, { replace: true });
-        toast.success("Tạo đơn hàng thành công");
-      }
-      setQr(await api.generateQR(current.orderCode, type, code));
-      toast.success("Tạo mã QR thành công");
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
+    api
+      .generateQR(order.orderCode, type)
+      .then(setQr)
+      .catch((error: Error) => {
+        qrRequest.current = null;
+        setQrError(error.message);
+      })
+      .finally(() => setBusy(false));
+  }, [order, method, qr, qrError]);
+
+  const lines: Line[] =
+    order?.items.map((i) => ({
+      key: i.id,
+      name: i.productName,
+      qty: i.quantity,
+      unit: i.unitPrice,
+      sub: i.subtotal,
+    })) ?? [];
+  const total = order?.totalAmount ?? 0;
 
   if (loadError) return <ErrorState message={loadError} />;
   if (orderParam && !order) return <Spinner label="Đang tải đơn hàng" />;
-  if (!order && items.length === 0) {
+  if (!orderParam) {
     return (
       <EmptyState
-        title="Chưa có sản phẩm để thanh toán"
-        text="Giỏ hàng của bạn đang trống."
+        title="Chưa có đơn hàng thanh toán"
+        text="Vui lòng quay lại giỏ hàng và chọn tiến hành thanh toán."
         action={
-          <Link to="/products" className="btn-primary">
-            Xem sản phẩm
+          <Link to="/cart" className="btn-primary">
+            Quay lại giỏ hàng
           </Link>
         }
       />
@@ -193,7 +179,13 @@ export default function Checkout() {
                       type="button"
                       role="radio"
                       aria-checked={active}
-                      onClick={() => setMethod(value)}
+                      onClick={() => {
+                        setMethod(value);
+                        setQr(null);
+                        setQrError(null);
+                        qrRequest.current = null;
+                      }}
+                      disabled={busy || !!qr}
                       className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition ${active ? "border-pink-500 bg-pink-50 text-pink-700" : "border-line hover:border-pink-300"}`}
                     >
                       <span>
@@ -210,23 +202,37 @@ export default function Checkout() {
                 })}
               </div>
             )}
-
-            <button
-              className="btn-primary mt-5 w-full !py-3"
-              onClick={generate}
-              disabled={busy || methods.loading || !method}
-            >
-              {busy ? "Đang xử lý…" : qr ? "Tạo lại mã QR" : "Tạo mã QR"}
-            </button>
-            {!order && (
-              <p className="mt-2 text-center text-xs text-ink-soft">
-                Thao tác này sẽ tạo đơn hàng. Tổng tiền được hệ thống cửa hàng
-                xác nhận.
-              </p>
-            )}
           </div>
 
-          {qr && <QrPanel qr={qr} showOrderLink />}
+          {busy && <Spinner label="Đang tạo mã QR" />}
+          {qrError && (
+            <div className="text-center" role="alert">
+              <p className="text-sm text-red-600">{qrError}</p>
+              <button
+                className="btn-outline mt-3"
+                onClick={() => setQrError(null)}
+              >
+                Thử tạo lại mã QR
+              </button>
+            </div>
+          )}
+          {qr && (
+            <>
+              <QrPanel qr={qr} />
+              <div className="text-center">
+                <p className="mb-3 text-sm text-ink-soft">
+                  Tạo đơn và mã QR không xác nhận đã nhận tiền. Cửa hàng sẽ
+                  kiểm tra giao dịch thủ công.
+                </p>
+                <button
+                  className="btn-primary w-full !py-3 sm:w-auto"
+                  onClick={() => navigate(`/order-success/${order?.orderCode}`)}
+                >
+                  Xem trạng thái đơn hàng
+                </button>
+              </div>
+            </>
+          )}
         </section>
       </div>
     </div>
