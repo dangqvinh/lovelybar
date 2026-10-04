@@ -13,7 +13,7 @@
 /supabase/.branches/
 
 # Local tooling output
-/.wrangler/
+**/.wrangler/
 *.log
 .DS_Store
 Thumbs.db
