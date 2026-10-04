@@ -1,0 +1,19 @@
+# Local environment files and secrets
+**/.env
+**/.env.*
+!**/.env.example
+
+# Generated dependencies and build output
+**/node_modules/
+**/dist/
+*.tsbuildinfo
+
+# Supabase CLI local state
+/supabase/.temp/
+/supabase/.branches/
+
+# Local tooling output
+/.wrangler/
+*.log
+.DS_Store
+Thumbs.db
