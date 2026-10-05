@@ -39,7 +39,6 @@ export default function QrPanel({ qr, showOrderLink }: Props) {
               <p className="mt-1 font-bold uppercase">
                 {qr.accountName.toLocaleUpperCase("vi-VN")}
               </p>
-              <p className="text-ink-soft">{qr.accountName}</p>
             </div>
           )}
         </div>
