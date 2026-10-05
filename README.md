@@ -34,17 +34,24 @@ Hoặc chạy cả API + DB: `docker compose up --build`.
 ## Cấu hình thanh toán (Supabase Edge Function)
 
 ```env
-PAYMENT_BANK_CODE=VCB
-PAYMENT_BANK_ACCOUNT=123456789
-PAYMENT_BANK_NAME=LOVELYBAR
-# PAYMENT_BANK_BIN=970436       # chỉ đặt nếu cần ghi đè BIN
+PAYMENT_BANK_CODE=BIDV
+PAYMENT_BANK_ACCOUNT=1440250089
+PAYMENT_BANK_NAME=Phan Thanh Hậu
+# PAYMENT_BANK_BIN=970418       # chỉ đặt nếu cần ghi đè BIN
 ```
 
-Đặt các giá trị bằng `npx supabase secrets set ...` hoặc tại Supabase Dashboard →
-Edge Functions → Secrets. Chỉ có **một** tài khoản nhận tiền. Các secrets không nằm
+Đặt các giá trị production bằng lệnh sau (hoặc tại Supabase Dashboard →
+Edge Functions → Secrets). Chỉ có **một** tài khoản nhận tiền. Các secrets không nằm
 trong frontend; riêng số tài khoản được nhúng trong payload QR để ngân hàng biết nơi
 chuyển tiền. Ảnh QR được dựng ngay trong trình duyệt, không gửi payload tới dịch vụ tạo
 QR bên thứ ba.
+
+```bash
+npx supabase secrets set PAYMENT_BANK_CODE=BIDV PAYMENT_BANK_ACCOUNT=1440250089 "PAYMENT_BANK_NAME=Phan Thanh Hậu"
+```
+
+Tên ngân hàng và chủ tài khoản được hiển thị cạnh QR; tên chủ tài khoản hiển thị cả
+dạng in hoa và dạng có dấu. Cập nhật secrets hiện dùng trước khi deploy Edge Function.
 
 ### Việc bạn PHẢI làm trước khi dùng thật
 
@@ -62,6 +69,10 @@ Backend:       lấy giá từ DB -> tính subtotal -> tổng -> lưu order + sn
 QR:            Edge Function nhận orderCode -> đọc orders.total_amount -> trả payload;
                frontend tạo ảnh QR cục bộ trong trình duyệt
 ```
+
+Giá bán còn 80% giá gốc (giảm 20%) từ 18:40 đến trước 07:00 theo giờ Việt Nam.
+Giá được tính lại ở máy chủ khi tạo đơn; danh sách sản phẩm và giỏ hàng hiển thị
+giá gốc gạch ngang cùng nhãn `SALE -20%` trong khung giờ ưu đãi.
 
 Mã đơn mới có dạng `LB20261003001` (ngày theo giờ Việt Nam + số thứ tự trong ngày), đồng thời là nội dung chuyển khoản. Mã của các đơn đã tạo trước khi đổi định dạng vẫn được giữ nguyên.
 URL và API công khai dùng `orderCode`, không dùng id số.

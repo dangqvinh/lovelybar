@@ -37,11 +37,23 @@ export default function QrPanel({ qr, showOrderLink }: Props) {
       <p className="mt-2 text-sm font-semibold text-amber-800">
         Mã QR chỉ hỗ trợ chuyển khoản, không xác nhận thanh toán thành công.
       </p>
-      {(qr.bankName || qr.accountName) && (
-        <p className="mt-1 text-sm font-semibold">
-          {qr.bankName}
-          {qr.accountName ? ` · ${qr.accountName}` : ""}
-        </p>
+      {(qr.bankName || qr.accountNumber || qr.accountName) && (
+        <div className="mt-3 text-sm">
+          {qr.bankName && (
+            <p className="font-bold">
+              {qr.bankName}
+              {qr.accountNumber ? ` · ${qr.accountNumber}` : ""}
+            </p>
+          )}
+          {qr.accountName && (
+            <div className="mt-1">
+              <p className="font-bold uppercase">
+                {qr.accountName.toLocaleUpperCase("vi-VN")}
+              </p>
+              <p className="text-ink-soft">{qr.accountName}</p>
+            </div>
+          )}
+        </div>
       )}
       <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
         <a

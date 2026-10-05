@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import ProductImage from "../components/ProductImage";
+import PriceDisplay from "../components/PriceDisplay";
+import SaleNotice from "../components/SaleNotice";
 import {
   EmptyState,
   ErrorState,
@@ -9,7 +11,6 @@ import {
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../services/api";
 import { cartCount, useCart } from "../store/cart";
-import { formatVND } from "../utils/format";
 
 export default function Home() {
   const { data, loading, error, reload } = useAsync(api.products);
@@ -63,14 +64,19 @@ export default function Home() {
                   className="aspect-square w-full rounded-2xl"
                 />
                 <p className="mt-2 truncate px-1 text-sm font-bold">{p.name}</p>
-                <p className="px-1 pb-1 text-sm font-semibold text-pink-600">
-                  {formatVND(p.price)}
-                </p>
+                <div className="px-1 pb-1">
+                  <PriceDisplay
+                    price={p.price}
+                    className="text-sm font-semibold text-pink-600"
+                  />
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
+
+      <SaleNotice />
 
       <section>
         <div className="mb-5 flex items-end justify-between">

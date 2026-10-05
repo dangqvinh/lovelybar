@@ -52,6 +52,7 @@ export interface QRResult {
   paymentMethod: string
   qrCode: string
   bankName?: string
+  accountNumber?: string
   accountName?: string
 }
 

@@ -3,11 +3,15 @@ import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import ProductImage from "../components/ProductImage";
 import QuantityStepper from "../components/QuantityStepper";
+import PriceDisplay from "../components/PriceDisplay";
+import SaleNotice from "../components/SaleNotice";
 import { ErrorState, Spinner } from "../components/States";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../services/api";
 import { useCart } from "../store/cart";
 import { formatVND } from "../utils/format";
+import { getSalePrice } from "../utils/pricing";
+import { useNightSale } from "../hooks/useNightSale";
 
 export default function ProductDetail() {
   const { id = "" } = useParams();
@@ -18,6 +22,7 @@ export default function ProductDetail() {
     reload,
   } = useAsync(() => api.product(id), [id]);
   const add = useCart((s) => s.add);
+  const saleActive = useNightSale();
   const [qty, setQty] = useState(1);
 
   if (loading) return <Spinner label="Đang tải sản phẩm" />;
@@ -47,9 +52,15 @@ export default function ProductDetail() {
         </div>
         <div className="flex flex-col justify-center">
           <h1 className="text-3xl font-extrabold">{p.name}</h1>
-          <p className="mt-3 text-3xl font-extrabold text-pink-600">
-            {formatVND(p.price)}
-          </p>
+          <div className="mt-3">
+            <PriceDisplay
+              price={p.price}
+              className="text-3xl font-extrabold text-pink-600"
+            />
+          </div>
+          <div className="mt-3">
+            <SaleNotice />
+          </div>
           <p className="mt-4 whitespace-pre-line text-ink-soft">
             {p.description || "Chưa có mô tả."}
           </p>
@@ -63,7 +74,7 @@ export default function ProductDetail() {
                 toast.success(`Đã thêm ${qty} × ${p.name} vào giỏ hàng`);
               }}
             >
-              Thêm vào giỏ · {formatVND(p.price * qty)}
+              Thêm vào giỏ · {formatVND(getSalePrice(p.price, saleActive) * qty)}
             </button>
           </div>
           <Link

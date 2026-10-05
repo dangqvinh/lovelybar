@@ -4,6 +4,7 @@ import {
   ErrorState,
   ProductGridSkeleton,
 } from "../components/States";
+import SaleNotice from "../components/SaleNotice";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../services/api";
 
@@ -12,6 +13,7 @@ export default function Products() {
   return (
     <div>
       <h1 className="mb-6 text-3xl font-extrabold">Sản phẩm</h1>
+      <SaleNotice />
       {loading ? (
         <ProductGridSkeleton />
       ) : error ? (
@@ -22,7 +24,7 @@ export default function Products() {
           text="Hiện chưa có sản phẩm nào. Vui lòng quay lại sau."
         />
       ) : (
-        <div className="product-grid grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
+        <div className="product-grid mt-6 grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
           {data.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}

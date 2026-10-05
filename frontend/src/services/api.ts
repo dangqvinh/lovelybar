@@ -213,6 +213,7 @@ export const api = {
           paymentMethod: data?.paymentMethod ?? paymentMethod ?? "BANK",
           qrCode,
           bankName: data?.bankName,
+          accountNumber: data?.accountNumber,
           accountName: data?.accountName,
         } satisfies QRResult,
         error: null,

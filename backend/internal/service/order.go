@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"lovelybar/internal/apperr"
 	"lovelybar/internal/model"
@@ -12,7 +13,10 @@ import (
 const (
 	maxLines    = 50
 	maxQuantity = 9999
+	salePercent = 80
 )
+
+var vietnamTimeZone = time.FixedZone("ICT", 7*60*60)
 
 // OrderLineInput is all the client may send. Prices and totals are never accepted.
 type OrderLineInput struct {
@@ -43,7 +47,7 @@ func (s *OrderService) Create(ctx context.Context, in CreateOrderInput) (model.O
 	if err != nil {
 		return model.Order{}, err
 	}
-	items, total, err := calcLines(products, in.Items)
+	items, total, err := calcLines(products, in.Items, time.Now())
 	if err != nil {
 		return model.Order{}, err
 	}
@@ -52,7 +56,7 @@ func (s *OrderService) Create(ctx context.Context, in CreateOrderInput) (model.O
 
 // calcLines is the single place where money is computed: prices come from the
 // database, quantities are validated, duplicate products are merged.
-func calcLines(products map[int64]model.Product, lines []OrderLineInput) ([]model.OrderItem, int64, error) {
+func calcLines(products map[int64]model.Product, lines []OrderLineInput, now time.Time) ([]model.OrderItem, int64, error) {
 	qty := map[int64]int{}
 	order := []int64{}
 	for _, l := range lines {
@@ -76,13 +80,23 @@ func calcLines(products map[int64]model.Product, lines []OrderLineInput) ([]mode
 	for _, id := range order {
 		p := products[id]
 		pid := p.ID
-		sub := p.Price * int64(qty[id])
+		unitPrice := priceAt(p.Price, now)
+		sub := unitPrice * int64(qty[id])
 		items = append(items, model.OrderItem{
-			ProductID: &pid, ProductName: p.Name, UnitPrice: p.Price, Quantity: qty[id], Subtotal: sub,
+			ProductID: &pid, ProductName: p.Name, UnitPrice: unitPrice, Quantity: qty[id], Subtotal: sub,
 		})
 		total += sub
 	}
 	return items, total, nil
+}
+
+func priceAt(price int64, now time.Time) int64 {
+	localTime := now.In(vietnamTimeZone)
+	minutes := localTime.Hour()*60 + localTime.Minute()
+	if minutes >= 18*60+40 || minutes < 7*60 {
+		return price * salePercent / 100
+	}
+	return price
 }
 
 func (s *OrderService) GetByCode(ctx context.Context, code string) (model.Order, error) {

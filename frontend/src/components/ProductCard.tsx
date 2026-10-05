@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import type { Product } from "../types";
 import { useCart } from "../store/cart";
-import { formatVND } from "../utils/format";
+import PriceDisplay from "./PriceDisplay";
 import ProductImage from "./ProductImage";
 
 export default function ProductCard({ product }: { product: Product }) {
@@ -25,9 +25,9 @@ export default function ProductCard({ product }: { product: Product }) {
         <p className="mt-1 line-clamp-2 min-h-[2.5rem] text-sm text-ink-soft">
           {product.description}
         </p>
-        <p className="mt-3 text-lg font-extrabold text-pink-600">
-          {formatVND(product.price)}
-        </p>
+        <div className="mt-3">
+          <PriceDisplay price={product.price} />
+        </div>
         <div className="mt-3 flex flex-col gap-2 lg:flex-row">
           <button
             className="btn-primary min-w-0 flex-1 whitespace-nowrap !px-3 lg:!px-2 lg:!text-xs"

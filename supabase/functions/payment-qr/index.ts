@@ -68,9 +68,9 @@ serve(async (request) => {
     const bankCode = Deno.env.get("PAYMENT_BANK_CODE") ?? "";
     const bankBin = resolveBankBin(bankCode, Deno.env.get("PAYMENT_BANK_BIN"));
     const accountNumber = Deno.env.get("PAYMENT_BANK_ACCOUNT") ?? "";
-    const bankName = Deno.env.get("PAYMENT_BANK_NAME") ?? "";
+    const accountName = Deno.env.get("PAYMENT_BANK_NAME") ?? "";
     const amount = Number(order.total_amount);
-    if (!accountNumber || !bankName) {
+    if (!accountNumber || !accountName) {
       return jsonResponse({ error: "Payment configuration is incomplete" }, 500);
     }
 
@@ -80,7 +80,9 @@ serve(async (request) => {
       amount,
       paymentMethod: "BANK",
       qrPayload,
-      bankName,
+      bankName: bankCode,
+      accountNumber,
+      accountName,
     });
   } catch (error) {
     return jsonResponse(

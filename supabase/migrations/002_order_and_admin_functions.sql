@@ -42,6 +42,26 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.night_sale_price(
+  base_price bigint,
+  sale_at timestamp with time zone
+)
+RETURNS bigint
+LANGUAGE sql
+IMMUTABLE
+STRICT
+SET search_path = ''
+AS $$
+  SELECT CASE
+    WHEN (
+      (sale_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::time >= TIME '18:40'
+      OR (sale_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::time < TIME '07:00'
+    )
+    THEN base_price * 80 / 100
+    ELSE base_price
+  END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.create_order(items jsonb)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -103,7 +123,7 @@ BEGIN
       RAISE EXCEPTION 'Quantity must be between 1 and 9999' USING ERRCODE = 'P0001';
     END IF;
 
-    SELECT p.id, p.name, p.price
+    SELECT p.id, p.name, public.night_sale_price(p.price, pg_catalog.now()) AS price
     INTO product_record
     FROM public.products AS p
     WHERE p.id = item_record.product_id
@@ -140,7 +160,7 @@ BEGIN
     GROUP BY (entry.value ->> 'productId')::bigint
     ORDER BY (entry.value ->> 'productId')::bigint
   LOOP
-    SELECT p.id, p.name, p.price
+    SELECT p.id, p.name, public.night_sale_price(p.price, pg_catalog.now()) AS price
     INTO product_record
     FROM public.products AS p
     WHERE p.id = item_record.product_id
@@ -337,6 +357,7 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.create_order(jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.night_sale_price(bigint, timestamp with time zone) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.get_order(text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_dashboard_stats() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_list_orders(text) FROM PUBLIC, anon, authenticated;
