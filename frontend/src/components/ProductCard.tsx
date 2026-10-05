@@ -26,7 +26,7 @@ export default function ProductCard({ product }: { product: Product }) {
           {product.description}
         </p>
         <div className="mt-3">
-          <PriceDisplay price={product.price} />
+          <PriceDisplay price={product.price} singleLine />
         </div>
         <div className="mt-3 flex flex-col gap-2 lg:flex-row">
           <button
