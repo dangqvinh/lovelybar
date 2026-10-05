@@ -23,31 +23,20 @@ export default function QrPanel({ qr, showOrderLink }: Props) {
           className="aspect-square w-full"
         />
       </div>
-      <p className="mt-4 text-sm text-ink-soft">Số tiền</p>
-      <p className="text-3xl font-extrabold text-pink-600">
-        {formatVND(qr.amount)}
-      </p>
-      <p className="mt-2 text-sm">
-        Đơn hàng: <span className="font-bold">{qr.orderCode}</span>
-      </p>
-      <p className="mt-3 text-sm text-ink-soft">
-        Quét mã QR bằng ứng dụng ngân hàng để chuyển khoản. Vui lòng giữ nguyên
-        nội dung chuyển khoản.
-      </p>
-      <p className="mt-2 text-sm font-semibold text-amber-800">
-        Mã QR chỉ hỗ trợ chuyển khoản, không xác nhận thanh toán thành công.
-      </p>
       {(qr.bankName || qr.accountNumber || qr.accountName) && (
-        <div className="mt-3 text-sm">
+        <div className="mt-4">
+          <p className="text-sm font-semibold text-ink-soft">
+            Thông tin chủ ngân hàng
+          </p>
           {qr.bankName && (
-            <p className="font-bold">
+            <p className="mt-1 text-sm font-bold">
               {qr.bankName}
               {qr.accountNumber ? ` · ${qr.accountNumber}` : ""}
             </p>
           )}
           {qr.accountName && (
-            <div className="mt-1">
-              <p className="font-bold uppercase">
+            <div>
+              <p className="mt-1 font-bold uppercase">
                 {qr.accountName.toLocaleUpperCase("vi-VN")}
               </p>
               <p className="text-ink-soft">{qr.accountName}</p>
@@ -55,6 +44,23 @@ export default function QrPanel({ qr, showOrderLink }: Props) {
           )}
         </div>
       )}
+      <div className="mt-4">
+        <p className="text-sm text-ink-soft">Số tiền</p>
+        <p className="text-3xl font-extrabold text-pink-600">
+          {formatVND(qr.amount)}
+        </p>
+      </div>
+      <div className="mt-3">
+        <p className="text-sm text-ink-soft">Nội dung chuyển khoản</p>
+        <p className="font-bold">{qr.orderCode}</p>
+      </div>
+      <p className="mt-3 text-sm text-ink-soft">
+        Quét mã QR bằng ứng dụng ngân hàng để chuyển khoản. Vui lòng giữ nguyên
+        nội dung chuyển khoản.
+      </p>
+      <p className="mt-2 text-sm font-semibold text-amber-800">
+        Mã QR chỉ hỗ trợ chuyển khoản, không xác nhận thanh toán thành công.
+      </p>
       <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
         <a
           href={qr.qrCode}
