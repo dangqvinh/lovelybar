@@ -62,6 +62,9 @@ export default function QrPanel({ qr, showOrderLink }: Props) {
           className="aspect-square w-full"
         />
       </div>
+      <p className="mt-2 text-sm text-ink-soft">
+        Nhấn giữ ảnh QR để tải ảnh về thiết bị.
+      </p>
       {(qr.bankName || qr.accountNumber || qr.accountName) && (
         <div className="mt-4">
           <p className="text-sm font-semibold text-ink-soft">
@@ -103,13 +106,6 @@ export default function QrPanel({ qr, showOrderLink }: Props) {
         <button type="button" onClick={saveToPhotos} className="btn-primary">
           Lưu vào Ảnh
         </button>
-        <a
-          href={qr.qrCode}
-          download={`${qr.orderCode}.png`}
-          className="btn-outline"
-        >
-          Tải ảnh mã QR
-        </a>
         {showOrderLink && (
           <Link to={`/order-success/${qr.orderCode}`} className="btn-primary">
             Xem đơn hàng
@@ -117,8 +113,7 @@ export default function QrPanel({ qr, showOrderLink }: Props) {
         )}
       </div>
       <p className="mt-2 text-xs text-ink-soft">
-        Chọn “Lưu hình ảnh” trong bảng chia sẻ của điện thoại. Website không
-        thể tự lưu ảnh vào thư viện nếu chưa được bạn xác nhận.
+        Nút “Lưu vào Ảnh” mở bảng chia sẻ; trên iPhone, chọn “Lưu hình ảnh”.
       </p>
     </section>
   );
