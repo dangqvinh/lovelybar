@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import type { QRResult } from "../types";
 import { formatVND } from "../utils/format";
 
@@ -10,6 +11,44 @@ interface Props {
 
 /** Large, phone-scannable QR with the exact amount from the backend. Never claims the payment is done. */
 export default function QrPanel({ qr, showOrderLink }: Props) {
+  async function saveToPhotos() {
+    if (
+      typeof navigator.share !== "function" ||
+      typeof navigator.canShare !== "function"
+    ) {
+      toast.info(
+        "Trình duyệt chưa hỗ trợ chia sẻ ảnh. Hãy tải ảnh rồi lưu vào thư viện từ ứng dụng Ảnh.",
+      );
+      return;
+    }
+
+    try {
+      const base64 = qr.qrCode.split(",")[1];
+      if (!base64) throw new Error("Không thể đọc dữ liệu ảnh mã QR.");
+
+      const bytes = Uint8Array.from(atob(base64), (char) =>
+        char.charCodeAt(0),
+      );
+      const file = new File([bytes], `${qr.orderCode}.png`, {
+        type: "image/png",
+      });
+
+      if (!navigator.canShare({ files: [file] })) {
+        toast.info(
+          "Trình duyệt chưa hỗ trợ chia sẻ ảnh. Hãy tải ảnh rồi lưu vào thư viện từ ứng dụng Ảnh.",
+        );
+        return;
+      }
+
+      await navigator.share({ files: [file], title: "Mã QR thanh toán" });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      toast.error(
+        error instanceof Error ? error.message : "Không thể chia sẻ ảnh mã QR.",
+      );
+    }
+  }
+
   return (
     <section
       className="rounded-3xl border border-pink-200 bg-pink-50/60 p-5 text-center sm:p-6"
@@ -61,6 +100,9 @@ export default function QrPanel({ qr, showOrderLink }: Props) {
         Mã QR chỉ hỗ trợ chuyển khoản, không xác nhận thanh toán thành công.
       </p>
       <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
+        <button type="button" onClick={saveToPhotos} className="btn-primary">
+          Lưu vào Ảnh
+        </button>
         <a
           href={qr.qrCode}
           download={`${qr.orderCode}.png`}
@@ -74,6 +116,10 @@ export default function QrPanel({ qr, showOrderLink }: Props) {
           </Link>
         )}
       </div>
+      <p className="mt-2 text-xs text-ink-soft">
+        Chọn “Lưu hình ảnh” trong bảng chia sẻ của điện thoại. Website không
+        thể tự lưu ảnh vào thư viện nếu chưa được bạn xác nhận.
+      </p>
     </section>
   );
 }
