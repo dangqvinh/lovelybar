@@ -104,7 +104,7 @@ export default function QrPanel({ qr, showOrderLink }: Props) {
       </p>
       <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
         <button type="button" onClick={saveToPhotos} className="btn-primary">
-          Lưu vào Ảnh
+          Chia sẻ ảnh QR
         </button>
         {showOrderLink && (
           <Link to={`/order-success/${qr.orderCode}`} className="btn-primary">
@@ -113,7 +113,7 @@ export default function QrPanel({ qr, showOrderLink }: Props) {
         )}
       </div>
       <p className="mt-2 text-xs text-ink-soft">
-        Nút “Lưu vào Ảnh” mở bảng chia sẻ; trên iPhone, chọn “Lưu hình ảnh”.
+        Mở bảng chia sẻ; trên iPhone, chọn “Lưu hình ảnh” để lưu vào Ảnh.
       </p>
     </section>
   );
