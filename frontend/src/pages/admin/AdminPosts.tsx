@@ -109,14 +109,12 @@ export default function AdminPosts() {
                 </p>
               </div>
               <div className="flex shrink-0 flex-wrap gap-2">
-                {post.isPublished && (
-                  <Link
-                    to={`/posts/${post.id}`}
-                    className="btn-outline !px-3 !py-1.5"
-                  >
-                    Xem
-                  </Link>
-                )}
+                <Link
+                  to={`/admin/posts/${post.id}`}
+                  className="btn-outline !px-3 !py-1.5"
+                >
+                  Xem bài viết
+                </Link>
                 <Link
                   to={`/admin/posts/${post.id}/edit`}
                   className="btn-soft !px-3 !py-1.5"
