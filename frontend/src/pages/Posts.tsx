@@ -24,12 +24,14 @@ export default function Posts() {
           {data.map((post) => (
             <article key={post.id} className="card p-5 sm:p-6">
               {post.images[0] && (
-                <img
-                  src={post.images[0]}
-                  alt={post.title}
-                  loading="lazy"
-                  className="mb-4 max-h-80 w-full rounded-2xl object-cover"
-                />
+                <div className="mb-4 aspect-square overflow-hidden rounded-2xl bg-pink-50">
+                  <img
+                    src={post.images[0]}
+                    alt={post.title}
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
               )}
               {post.images.length > 1 && (
                 <p className="mb-3 text-xs text-ink-soft">

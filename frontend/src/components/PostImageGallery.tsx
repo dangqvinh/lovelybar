@@ -10,13 +10,17 @@ export default function PostImageGallery({
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {images.map((image, index) => (
-        <img
+        <div
           key={image}
-          src={image}
-          alt={`${title} - ảnh ${index + 1}`}
-          loading="lazy"
-          className="max-h-[32rem] w-full rounded-2xl object-contain"
-        />
+          className="aspect-square overflow-hidden rounded-2xl bg-pink-50"
+        >
+          <img
+            src={image}
+            alt={`${title} - ảnh ${index + 1}`}
+            loading="lazy"
+            className="h-full w-full object-cover"
+          />
+        </div>
       ))}
     </div>
   );

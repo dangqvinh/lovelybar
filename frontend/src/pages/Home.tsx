@@ -105,12 +105,14 @@ export default function Home() {
             {posts.data.slice(0, 3).map((post) => (
               <article key={post.id} className="card overflow-hidden">
                 {post.images[0] && (
-                  <img
-                    src={post.images[0]}
-                    alt={post.title}
-                    loading="lazy"
-                    className="aspect-video w-full object-cover"
-                  />
+                  <div className="aspect-square overflow-hidden bg-pink-50">
+                    <img
+                      src={post.images[0]}
+                      alt={post.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
                 )}
                 <div className="p-5">
                   <p className="text-xs font-medium text-ink-soft">
