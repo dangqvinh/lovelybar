@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import PostImageGallery from "../components/PostImageGallery";
 import { EmptyState, ErrorState, Spinner } from "../components/States";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../services/api";
@@ -23,21 +24,9 @@ export default function Posts() {
         <div className="space-y-4">
           {data.map((post) => (
             <article key={post.id} className="card p-5 sm:p-6">
-              {post.images[0] && (
-                <div className="mb-4 aspect-square overflow-hidden rounded-2xl bg-pink-50">
-                  <img
-                    src={post.images[0]}
-                    alt={post.title}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              )}
-              {post.images.length > 1 && (
-                <p className="mb-3 text-xs text-ink-soft">
-                  {post.images.length} ảnh
-                </p>
-              )}
+              <div className="mb-4">
+                <PostImageGallery images={post.images} title={post.title} />
+              </div>
               <p className="text-sm text-ink-soft">
                 {formatDate(post.createdAt)}
               </p>
