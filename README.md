@@ -2,7 +2,8 @@
 
 Web shop nội bộ nhỏ: React + TypeScript + Tailwind (frontend), Go + Gin + PostgreSQL (backend).
 
-- Khách vào `/`, admin vào `/admin`. **Không có đăng nhập.**
+- Khách vào `/`, admin vào `/admin` và đăng nhập bằng Supabase Auth.
+- Admin có thể đăng, sửa, ẩn/hiện và xóa bài viết; người dùng xem bài đang hiển thị tại `/posts`.
 - Không có tồn kho: mua số lượng bất kỳ (1 đến 9999 mỗi sản phẩm).
 - Giỏ hàng chỉ nằm trong bộ nhớ trình duyệt (refresh là mất, có chủ đích).
 - Thanh toán: chuyển khoản qua **VietQR**. Hệ thống chỉ **tạo QR**, **không biết** tiền đã về hay chưa.
@@ -28,6 +29,7 @@ npm run dev                               # http://localhost:5173  (admin: /admi
 ```
 
 `SEED_SAMPLE=true` sẽ thêm 4 sản phẩm mẫu khi bảng trống. Migration chạy tự động khi API khởi động.
+Các thay đổi trong `supabase/migrations` áp dụng qua Supabase CLI bằng `npx supabase db push`.
 
 Hoặc chạy cả API + DB: `docker compose up --build`.
 
@@ -91,11 +93,14 @@ Admin    GET  /api/admin/dashboard
 
 Response: `{success: true, data}` hoặc `{success: false, message}`.
 
-## Cảnh báo bảo mật: `/admin` KHÔNG được bảo vệ
+## Quyền admin
 
-Bất kỳ ai truy cập được URL đều sửa được sản phẩm, đơn hàng và upload ảnh. Chỉ dùng trong mạng nội bộ.
-Nếu đưa lên internet, hãy thêm một lớp bảo vệ _trước_ khi mở: Cloudflare Access, HTTP Basic Auth ở reverse proxy,
-IP allowlist hoặc đăng nhập admin. Hiện chưa làm các mục này.
+Frontend dùng Supabase Auth để đăng nhập; Row Level Security chỉ cho tài khoản có
+`app_metadata.role = 'admin'` thao tác dữ liệu quản trị. Bài đăng được đọc công khai,
+nhưng chỉ admin mới được tạo, sửa, ẩn/hiện hoặc xóa theo migrations
+`supabase/migrations/007_posts.sql` và `supabase/migrations/008_post_visibility.sql`.
+Nếu dùng backend Go riêng, các route `/api/admin` hiện chưa có xác thực; cần bảo vệ chúng
+trước khi công khai backend ra internet.
 
 Khác: không commit `.env`; backend kiểm tra lại mọi input (frontend chỉ để tiện dùng);
 ảnh upload được kiểm tra theo nội dung thật (JPG/PNG/WEBP, tối đa 2 MB).

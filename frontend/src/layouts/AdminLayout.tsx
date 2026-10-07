@@ -39,6 +39,9 @@ export default function AdminLayout() {
             <NavLink to="/admin/products" className={cls}>
               Sản phẩm
             </NavLink>
+            <NavLink to="/admin/posts" className={cls}>
+              Bài đăng
+            </NavLink>
             <NavLink to="/admin/orders" className={cls}>
               Đơn hàng
             </NavLink>

@@ -7,13 +7,16 @@ import {
   EmptyState,
   ErrorState,
   ProductGridSkeleton,
+  Spinner,
 } from "../components/States";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../services/api";
 import { cartCount, useCart } from "../store/cart";
+import { formatDate } from "../utils/format";
 
 export default function Home() {
   const { data, loading, error, reload } = useAsync(api.products);
+  const posts = useAsync(api.posts);
   const count = useCart((s) => cartCount(s.items));
   const featured = (data ?? []).slice(0, 4);
 
@@ -77,6 +80,48 @@ export default function Home() {
       </section>
 
       <SaleNotice />
+
+      <section>
+        <div className="mb-5 flex items-end justify-between gap-3">
+          <h2 className="text-2xl font-extrabold">Bài đăng mới</h2>
+          <Link
+            to="/posts"
+            className="whitespace-nowrap text-sm font-semibold text-pink-600 hover:underline"
+          >
+            Xem tất cả
+          </Link>
+        </div>
+        {posts.loading ? (
+          <Spinner label="Đang tải bài đăng" />
+        ) : posts.error ? (
+          <ErrorState message={posts.error} onRetry={posts.reload} />
+        ) : !posts.data?.length ? (
+          <EmptyState
+            title="Chưa có bài đăng"
+            text="Thông tin mới sẽ được cập nhật tại đây."
+          />
+        ) : (
+          <div className="grid gap-4 md:grid-cols-3">
+            {posts.data.slice(0, 3).map((post) => (
+              <article key={post.id} className="card p-5">
+                <p className="text-xs font-medium text-ink-soft">
+                  {formatDate(post.createdAt)}
+                </p>
+                <h3 className="mt-2 text-lg font-bold">{post.title}</h3>
+                <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm text-ink-soft">
+                  {post.content}
+                </p>
+                <Link
+                  to={`/posts/${post.id}`}
+                  className="mt-4 inline-flex text-sm font-semibold text-pink-600 hover:underline"
+                >
+                  Đọc bài đăng
+                </Link>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section>
         <div className="mb-5 flex items-end justify-between">

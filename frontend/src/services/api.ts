@@ -3,6 +3,8 @@ import type {
   OrderItem,
   OrderStatus,
   PaymentMethod,
+  Post,
+  PostInput,
   Product,
   ProductInput,
   ProductSalesReportRow,
@@ -94,6 +96,16 @@ function toProduct(row: any): Product {
   };
 }
 
+function toPost(row: any): Post {
+  return {
+    id: Number(row.id),
+    title: row.title,
+    content: row.content,
+    isPublished: Boolean(row.is_published ?? row.isPublished ?? true),
+    createdAt: row.created_at ?? row.createdAt ?? new Date().toISOString(),
+  };
+}
+
 function toOrderItem(row: any): OrderItem {
   return {
     id: Number(row.id),
@@ -151,6 +163,28 @@ function toProductSalesReportRow(row: any): ProductSalesReportRow {
 }
 
 export const api = {
+  posts: () =>
+    request<Post[]>(async () => {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("is_published", true)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false });
+      return { data: (data ?? []).map(toPost), error };
+    }),
+
+  post: (id: number | string) =>
+    request<Post>(async () => {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("id", Number(id))
+        .eq("is_published", true)
+        .maybeSingle();
+      return { data: data ? toPost(data) : null, error };
+    }),
+
   products: () =>
     request<Product[]>(async () => {
       const { data, error } = await supabase
@@ -222,6 +256,64 @@ export const api = {
   },
 
   admin: {
+    posts: () =>
+      request<Post[]>(async () => {
+        const { data, error } = await supabase
+          .from("posts")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false });
+        return { data: (data ?? []).map(toPost), error };
+      }),
+
+    post: (id: number | string) =>
+      request<Post>(async () => {
+        const { data, error } = await supabase
+          .from("posts")
+          .select("*")
+          .eq("id", Number(id))
+          .maybeSingle();
+        return { data: data ? toPost(data) : null, error };
+      }),
+
+    createPost: (post: PostInput) =>
+      request<Post>(async () => {
+        const { data, error } = await supabase
+          .from("posts")
+          .insert({ title: post.title, content: post.content })
+          .select("*")
+          .single();
+        return { data: data ? toPost(data) : null, error };
+      }),
+
+    updatePost: (id: number, post: PostInput) =>
+      request<Post>(async () => {
+        const { data, error } = await supabase
+          .from("posts")
+          .update({ title: post.title, content: post.content })
+          .eq("id", id)
+          .select("*")
+          .single();
+        return { data: data ? toPost(data) : null, error };
+      }),
+
+    setPostVisibility: (id: number, isPublished: boolean) =>
+      request<Post>(async () => {
+        const { data, error } = await supabase
+          .from("posts")
+          .update({ is_published: isPublished })
+          .eq("id", id)
+          .select("*")
+          .single();
+        return { data: data ? toPost(data) : null, error };
+      }),
+
+    deletePost: (id: number) =>
+      request<{ deleted: boolean }>(async () => {
+        const { error } = await supabase.from("posts").delete().eq("id", id);
+        return { data: { deleted: !error }, error };
+      }),
+
     dashboard: () =>
       request<Stats>(async () => {
         const { data, error } = await supabase.rpc("admin_dashboard_stats");

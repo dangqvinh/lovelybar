@@ -16,6 +16,10 @@ import ProductForm from './pages/admin/ProductForm';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminLogin from './pages/admin/Login';
 import Reports from './pages/admin/Reports';
+import Posts from './pages/Posts';
+import PostDetail from './pages/PostDetail';
+import AdminPosts from './pages/admin/AdminPosts';
+import PostForm from './pages/admin/PostForm';
 
 function AdminRouteGuard() {
   const [ready, setReady] = useState(false);
@@ -51,6 +55,8 @@ export default function App() {
     <Routes>
       <Route element={<ShopLayout />}>
         <Route path="/" element={<Home />} />
+        <Route path="/posts" element={<Posts />} />
+        <Route path="/posts/:id" element={<PostDetail />} />
         <Route path="/products" element={<Products />} />
         <Route path="/products/:id" element={<ProductDetail />} />
         <Route path="/cart" element={<Cart />} />
@@ -68,6 +74,9 @@ export default function App() {
           <Route path="products/:id/edit" element={<ProductForm />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="posts" element={<AdminPosts />} />
+          <Route path="posts/create" element={<PostForm />} />
+          <Route path="posts/:id/edit" element={<PostForm />} />
         </Route>
       </Route>
 

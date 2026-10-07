@@ -19,6 +19,19 @@ export interface ProductInput {
   status: ProductStatus
 }
 
+export interface Post {
+  id: number
+  title: string
+  content: string
+  isPublished: boolean
+  createdAt: string
+}
+
+export interface PostInput {
+  title: string
+  content: string
+}
+
 export interface OrderItem {
   id: number
   productId: number | null

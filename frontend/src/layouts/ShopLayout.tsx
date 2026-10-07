@@ -51,6 +51,9 @@ export default function ShopLayout() {
             <NavLink to="/products" className={navCls}>
               Sản phẩm
             </NavLink>
+            <NavLink to="/posts" className={navCls}>
+              Bài đăng
+            </NavLink>
             <Link
               to="/cart"
               className="btn-soft relative ml-1 !px-4"
