@@ -23,6 +23,7 @@ export interface Post {
   id: number
   title: string
   content: string
+  image: string | null
   isPublished: boolean
   createdAt: string
 }
@@ -30,6 +31,7 @@ export interface Post {
 export interface PostInput {
   title: string
   content: string
+  image: string | null
 }
 
 export interface OrderItem {

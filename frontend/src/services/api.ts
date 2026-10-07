@@ -101,9 +101,22 @@ function toPost(row: any): Post {
     id: Number(row.id),
     title: row.title,
     content: row.content,
+    image: row.image ?? null,
     isPublished: Boolean(row.is_published ?? row.isPublished ?? true),
     createdAt: row.created_at ?? row.createdAt ?? new Date().toISOString(),
   };
+}
+
+function postImageObjectPath(imageUrl: string): string {
+  const marker = "/storage/v1/object/public/product-images/";
+  const pathname = new URL(imageUrl).pathname;
+  const markerIndex = pathname.indexOf(marker);
+  if (markerIndex < 0) throw new ApiError("Không xác định được đường dẫn ảnh bài đăng.");
+  const objectPath = decodeURIComponent(pathname.slice(markerIndex + marker.length));
+  if (!objectPath.startsWith("posts/")) {
+    throw new ApiError("Đường dẫn ảnh bài đăng không hợp lệ.");
+  }
+  return objectPath;
 }
 
 function toOrderItem(row: any): OrderItem {
@@ -280,7 +293,7 @@ export const api = {
       request<Post>(async () => {
         const { data, error } = await supabase
           .from("posts")
-          .insert({ title: post.title, content: post.content })
+          .insert({ title: post.title, content: post.content, image: post.image })
           .select("*")
           .single();
         return { data: data ? toPost(data) : null, error };
@@ -290,11 +303,49 @@ export const api = {
       request<Post>(async () => {
         const { data, error } = await supabase
           .from("posts")
-          .update({ title: post.title, content: post.content })
+          .update({ title: post.title, content: post.content, image: post.image })
           .eq("id", id)
           .select("*")
           .single();
         return { data: data ? toPost(data) : null, error };
+      }),
+
+    uploadPostImage: (file: File) =>
+      request<string>(async () => {
+        const extensions: Record<string, string> = {
+          "image/jpeg": "jpg",
+          "image/png": "png",
+          "image/webp": "webp",
+        };
+        const extension = extensions[file.type];
+        if (!extension || file.size > 2 * 1024 * 1024) {
+          return {
+            data: null,
+            error: {
+              message: "Ảnh bài đăng phải là JPG, PNG hoặc WEBP và tối đa 2 MB.",
+            },
+          };
+        }
+
+        const objectPath = `posts/${crypto.randomUUID()}.${extension}`;
+        const { error } = await supabase.storage
+          .from("product-images")
+          .upload(objectPath, file, { cacheControl: "3600", upsert: false });
+        if (error) return { data: null, error };
+
+        const { data } = supabase.storage
+          .from("product-images")
+          .getPublicUrl(objectPath);
+        return { data: data.publicUrl, error: null };
+      }),
+
+    deletePostImage: (imageUrl: string) =>
+      request<{ deleted: boolean }>(async () => {
+        const objectPath = postImageObjectPath(imageUrl);
+        const { error } = await supabase.storage
+          .from("product-images")
+          .remove([objectPath]);
+        return { data: { deleted: !error }, error };
       }),
 
     setPostVisibility: (id: number, isPublished: boolean) =>
@@ -309,9 +360,32 @@ export const api = {
       }),
 
     deletePost: (id: number) =>
-      request<{ deleted: boolean }>(async () => {
+      request<Post | null>(async () => {
+        const { data: post, error: fetchError } = await supabase
+          .from("posts")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
+        if (fetchError) return { data: null, error: fetchError };
+        if (!post) return { data: null, error: { message: "Không tìm thấy bài đăng." } };
+
         const { error } = await supabase.from("posts").delete().eq("id", id);
-        return { data: { deleted: !error }, error };
+        if (error) return { data: null, error };
+        if (post.image) {
+          const objectPath = postImageObjectPath(post.image);
+          const { error: imageError } = await supabase.storage
+            .from("product-images")
+            .remove([objectPath]);
+          if (imageError) {
+            return {
+              data: toPost(post),
+              error: {
+                message: `Bài đã xóa nhưng không thể xóa ảnh cũ: ${imageError.message}`,
+              },
+            };
+          }
+        }
+        return { data: null, error: null };
       }),
 
     dashboard: () =>

@@ -103,20 +103,30 @@ export default function Home() {
         ) : (
           <div className="grid gap-4 md:grid-cols-3">
             {posts.data.slice(0, 3).map((post) => (
-              <article key={post.id} className="card p-5">
-                <p className="text-xs font-medium text-ink-soft">
-                  {formatDate(post.createdAt)}
-                </p>
-                <h3 className="mt-2 text-lg font-bold">{post.title}</h3>
-                <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm text-ink-soft">
-                  {post.content}
-                </p>
-                <Link
-                  to={`/posts/${post.id}`}
-                  className="mt-4 inline-flex text-sm font-semibold text-pink-600 hover:underline"
-                >
-                  Đọc bài đăng
-                </Link>
+              <article key={post.id} className="card overflow-hidden">
+                {post.image && (
+                  <img
+                    src={post.image}
+                    alt={post.title}
+                    loading="lazy"
+                    className="aspect-video w-full object-cover"
+                  />
+                )}
+                <div className="p-5">
+                  <p className="text-xs font-medium text-ink-soft">
+                    {formatDate(post.createdAt)}
+                  </p>
+                  <h3 className="mt-2 text-lg font-bold">{post.title}</h3>
+                  <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm text-ink-soft">
+                    {post.content}
+                  </p>
+                  <Link
+                    to={`/posts/${post.id}`}
+                    className="mt-4 inline-flex text-sm font-semibold text-pink-600 hover:underline"
+                  >
+                    Đọc bài đăng
+                  </Link>
+                </div>
               </article>
             ))}
           </div>

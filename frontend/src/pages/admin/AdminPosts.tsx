@@ -37,6 +37,8 @@ export default function AdminPosts() {
       reload();
     } catch (e) {
       toast.error((e as Error).message);
+      setToDelete(null);
+      reload();
     } finally {
       setBusy(false);
     }
