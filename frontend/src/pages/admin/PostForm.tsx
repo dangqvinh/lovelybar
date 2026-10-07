@@ -1,14 +1,20 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ErrorState, Spinner } from "../../components/States";
 import { useAsync } from "../../hooks/useAsync";
 import { api } from "../../services/api";
-import { assetUrl } from "../../utils/format";
 
 const MAX_TITLE_LENGTH = 200;
 const MAX_CONTENT_LENGTH = 20000;
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+const MAX_IMAGES = 20;
+
+interface ImagePreview {
+  id: string;
+  file: File;
+  url: string;
+}
 
 export default function PostForm() {
   const { id } = useParams();
@@ -20,26 +26,36 @@ export default function PostForm() {
   );
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [image, setImage] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [images, setImages] = useState<string[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
   const [busy, setBusy] = useState(false);
+  const previewUrls = useRef(new Set<string>());
 
   useEffect(() => {
     if (!data) return;
     setTitle(data.title);
     setContent(data.content);
-    setImage(data.image);
+    setImages(data.images);
   }, [data]);
 
-  useEffect(() => {
-    if (!image?.startsWith("blob:")) return;
-    return () => URL.revokeObjectURL(image);
-  }, [image]);
+  useEffect(
+    () => () => {
+      previewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+      previewUrls.current.clear();
+    },
+    [],
+  );
 
   if (loading) return <Spinner label="Đang tải bài đăng" />;
   if (error) return <ErrorState message={error} onRetry={reload} />;
   if (editing && !data) {
     return <ErrorState message="Không tìm thấy bài đăng cần chỉnh sửa." />;
+  }
+
+  function removePreview(preview: ImagePreview) {
+    URL.revokeObjectURL(preview.url);
+    previewUrls.current.delete(preview.url);
+    setImagePreviews((current) => current.filter((item) => item.id !== preview.id));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -53,38 +69,39 @@ export default function PostForm() {
       toast.error(`Nội dung phải có từ 1 đến ${MAX_CONTENT_LENGTH} ký tự.`);
       return;
     }
-    if (
-      imageFile &&
-      !["image/jpeg", "image/png", "image/webp"].includes(imageFile.type)
-    ) {
-      toast.error("Ảnh phải có định dạng JPG, PNG hoặc WEBP.");
-      return;
-    }
-    if (imageFile && imageFile.size > MAX_IMAGE_SIZE) {
-      toast.error("Dung lượng ảnh tối đa là 2 MB.");
+
+    const invalidFile = imagePreviews.find(
+      ({ file }) =>
+        !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+        file.size > MAX_IMAGE_SIZE,
+    );
+    if (invalidFile) {
+      toast.error("Ảnh phải là JPG, PNG hoặc WEBP và dung lượng tối đa 2 MB.");
       return;
     }
 
     setBusy(true);
-    let uploadedImage: string | null = null;
+    let uploadedImages: string[] = [];
     try {
-      if (imageFile) {
-        uploadedImage = await api.admin.uploadPostImage(imageFile);
-      }
-      const nextImage = uploadedImage ?? image;
-      const post = { title: cleanTitle, content, image: nextImage };
+      uploadedImages = await api.admin.uploadPostImages(
+        imagePreviews.map(({ file }) => file),
+      );
+      const nextImages = [...images, ...uploadedImages];
+      const post = { title: cleanTitle, content, images: nextImages };
       if (editing && id) {
         await api.admin.updatePost(Number(id), post);
       } else {
         await api.admin.createPost(post);
       }
 
-      if (data?.image && data.image !== nextImage) {
+      const removedImages =
+        data?.images.filter((image) => !images.includes(image)) ?? [];
+      if (removedImages.length) {
         try {
-          await api.admin.deletePostImage(data.image);
+          await api.admin.deletePostImages(removedImages);
         } catch (cleanupError) {
           toast.error(
-            `Đã lưu bài đăng nhưng không thể xóa ảnh cũ: ${(cleanupError as Error).message}`,
+            `Đã lưu bài đăng nhưng không thể xóa ảnh đã gỡ: ${(cleanupError as Error).message}`,
           );
           navigate("/admin/posts");
           return;
@@ -94,11 +111,11 @@ export default function PostForm() {
       navigate("/admin/posts");
     } catch (e) {
       let message = (e as Error).message;
-      if (uploadedImage) {
+      if (uploadedImages.length) {
         try {
-          await api.admin.deletePostImage(uploadedImage);
+          await api.admin.deletePostImages(uploadedImages);
         } catch (cleanupError) {
-          message += ` Không thể dọn ảnh vừa tải lên: ${(cleanupError as Error).message}`;
+          message += ` Không thể dọn các ảnh vừa tải lên: ${(cleanupError as Error).message}`;
         }
       }
       toast.error(message);
@@ -153,41 +170,74 @@ export default function PostForm() {
 
         <div>
           <span className="label">Ảnh bài đăng (không bắt buộc)</span>
-          {image && (
-            <div className="mb-3 overflow-hidden rounded-2xl border border-line">
-              <img
-                src={assetUrl(image) ?? image}
-                alt="Ảnh xem trước bài đăng"
-                className="max-h-80 w-full object-contain"
-              />
-            </div>
-          )}
-          <div className="flex flex-wrap items-center gap-3">
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="input"
-              onChange={(event) => {
-                const file = event.target.files?.[0] ?? null;
-                setImageFile(file);
-                if (file) setImage(URL.createObjectURL(file));
-              }}
-            />
-            {image && (
-              <button
-                type="button"
-                className="btn-danger"
-                onClick={() => {
-                  setImage(null);
-                  setImageFile(null);
-                }}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {images.map((image, index) => (
+              <div
+                key={image}
+                className="relative overflow-hidden rounded-2xl border border-line"
               >
-                Gỡ ảnh
-              </button>
-            )}
+                <img
+                  src={image}
+                  alt={`Ảnh ${index + 1} của bài đăng`}
+                  className="aspect-square w-full object-cover"
+                />
+                <button
+                  type="button"
+                  className="btn-danger absolute right-2 top-2 !min-h-9 !px-3 !py-1"
+                  onClick={() =>
+                    setImages((current) => current.filter((item) => item !== image))
+                  }
+                  aria-label={`Gỡ ảnh ${index + 1}`}
+                >
+                  Gỡ
+                </button>
+              </div>
+            ))}
+            {imagePreviews.map((preview, index) => (
+              <div
+                key={preview.id}
+                className="relative overflow-hidden rounded-2xl border border-line"
+              >
+                <img
+                  src={preview.url}
+                  alt={`Ảnh mới ${index + 1} của bài đăng`}
+                  className="aspect-square w-full object-cover"
+                />
+                <button
+                  type="button"
+                  className="btn-danger absolute right-2 top-2 !min-h-9 !px-3 !py-1"
+                  onClick={() => removePreview(preview)}
+                  aria-label={`Gỡ ảnh mới ${index + 1}`}
+                >
+                  Gỡ
+                </button>
+              </div>
+            ))}
           </div>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            className="input mt-3"
+            onChange={(event) => {
+              const files = Array.from(event.target.files ?? []);
+              const remaining = MAX_IMAGES - images.length - imagePreviews.length;
+              if (files.length > remaining) {
+                toast.error(`Mỗi bài đăng chỉ được có tối đa ${MAX_IMAGES} ảnh.`);
+                event.target.value = "";
+                return;
+              }
+              const previews = files.map((file) => {
+                const url = URL.createObjectURL(file);
+                previewUrls.current.add(url);
+                return { id: crypto.randomUUID(), file, url };
+              });
+              setImagePreviews((current) => [...current, ...previews]);
+              event.target.value = "";
+            }}
+          />
           <p className="mt-1 text-xs text-ink-soft">
-            Chấp nhận JPG, PNG, WEBP; dung lượng tối đa 2 MB.
+            Tối đa {MAX_IMAGES} ảnh mỗi bài. Chấp nhận JPG, PNG, WEBP; mỗi ảnh tối đa 2 MB.
           </p>
         </div>
 

@@ -3,7 +3,7 @@
 Web shop nội bộ nhỏ: React + TypeScript + Tailwind (frontend), Go + Gin + PostgreSQL (backend).
 
 - Khách vào `/`, admin vào `/admin` và đăng nhập bằng Supabase Auth.
-- Admin có thể đăng bài kèm ảnh, sửa, ẩn/hiện và xóa bài viết; người dùng xem bài đang hiển thị tại `/posts`.
+- Admin có thể đăng bài kèm tối đa 20 ảnh (mỗi ảnh tối đa 2 MB), sửa, ẩn/hiện và xóa bài viết; người dùng xem bài đang hiển thị tại `/posts`.
 - Không có tồn kho: mua số lượng bất kỳ (1 đến 9999 mỗi sản phẩm).
 - Giỏ hàng chỉ nằm trong bộ nhớ trình duyệt (refresh là mất, có chủ đích).
 - Thanh toán: chuyển khoản qua **VietQR**. Hệ thống chỉ **tạo QR**, **không biết** tiền đã về hay chưa.
@@ -99,7 +99,8 @@ Frontend dùng Supabase Auth để đăng nhập; Row Level Security chỉ cho t
 `app_metadata.role = 'admin'` thao tác dữ liệu quản trị. Bài đăng được đọc công khai,
 nhưng chỉ admin mới được tạo, sửa, ẩn/hiện hoặc xóa theo migrations
 `supabase/migrations/007_posts.sql`, `supabase/migrations/008_post_visibility.sql` và
-`supabase/migrations/009_post_image.sql`.
+`supabase/migrations/009_post_image.sql`, `supabase/migrations/010_post_images.sql` và
+`supabase/migrations/011_post_image_limit.sql`.
 Nếu dùng backend Go riêng, các route `/api/admin` hiện chưa có xác thực; cần bảo vệ chúng
 trước khi công khai backend ra internet.
 

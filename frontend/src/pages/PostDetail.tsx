@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, Spinner } from "../components/States";
+import PostImageGallery from "../components/PostImageGallery";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../services/api";
 import { formatDate } from "../utils/format";
@@ -38,13 +39,7 @@ export default function PostDetail() {
       <p className="mt-6 text-sm text-ink-soft">{formatDate(data.createdAt)}</p>
       <h1 className="mt-2 text-3xl font-extrabold">{data.title}</h1>
       <div className="card mt-6 p-5 leading-7 text-ink-soft sm:p-8">
-        {data.image && (
-          <img
-            src={data.image}
-            alt={data.title}
-            className="mb-6 max-h-[32rem] w-full rounded-2xl object-contain"
-          />
-        )}
+        <PostImageGallery images={data.images} title={data.title} />
         <p className="whitespace-pre-line">{data.content}</p>
       </div>
     </article>

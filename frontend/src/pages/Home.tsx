@@ -104,9 +104,9 @@ export default function Home() {
           <div className="grid gap-4 md:grid-cols-3">
             {posts.data.slice(0, 3).map((post) => (
               <article key={post.id} className="card overflow-hidden">
-                {post.image && (
+                {post.images[0] && (
                   <img
-                    src={post.image}
+                    src={post.images[0]}
                     alt={post.title}
                     loading="lazy"
                     className="aspect-video w-full object-cover"

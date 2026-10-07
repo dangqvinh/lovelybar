@@ -101,22 +101,32 @@ function toPost(row: any): Post {
     id: Number(row.id),
     title: row.title,
     content: row.content,
-    image: row.image ?? null,
+    images: Array.isArray(row.images)
+      ? row.images
+      : row.image
+        ? [row.image]
+        : [],
     isPublished: Boolean(row.is_published ?? row.isPublished ?? true),
     createdAt: row.created_at ?? row.createdAt ?? new Date().toISOString(),
   };
 }
 
-function postImageObjectPath(imageUrl: string): string {
+function postImageObjectPaths(imageUrls: string[]): string[] {
   const marker = "/storage/v1/object/public/product-images/";
-  const pathname = new URL(imageUrl).pathname;
-  const markerIndex = pathname.indexOf(marker);
-  if (markerIndex < 0) throw new ApiError("Không xác định được đường dẫn ảnh bài đăng.");
-  const objectPath = decodeURIComponent(pathname.slice(markerIndex + marker.length));
-  if (!objectPath.startsWith("posts/")) {
-    throw new ApiError("Đường dẫn ảnh bài đăng không hợp lệ.");
-  }
-  return objectPath;
+  return imageUrls.map((imageUrl) => {
+    const pathname = new URL(imageUrl).pathname;
+    const markerIndex = pathname.indexOf(marker);
+    if (markerIndex < 0) {
+      throw new ApiError("Không xác định được đường dẫn ảnh bài đăng.");
+    }
+    const objectPath = decodeURIComponent(
+      pathname.slice(markerIndex + marker.length),
+    );
+    if (!objectPath.startsWith("posts/")) {
+      throw new ApiError("Đường dẫn ảnh bài đăng không hợp lệ.");
+    }
+    return objectPath;
+  });
 }
 
 function toOrderItem(row: any): OrderItem {
@@ -293,7 +303,7 @@ export const api = {
       request<Post>(async () => {
         const { data, error } = await supabase
           .from("posts")
-          .insert({ title: post.title, content: post.content, image: post.image })
+          .insert({ title: post.title, content: post.content, images: post.images })
           .select("*")
           .single();
         return { data: data ? toPost(data) : null, error };
@@ -303,22 +313,24 @@ export const api = {
       request<Post>(async () => {
         const { data, error } = await supabase
           .from("posts")
-          .update({ title: post.title, content: post.content, image: post.image })
+          .update({ title: post.title, content: post.content, images: post.images })
           .eq("id", id)
           .select("*")
           .single();
         return { data: data ? toPost(data) : null, error };
       }),
 
-    uploadPostImage: (file: File) =>
-      request<string>(async () => {
+    uploadPostImages: (files: File[]) =>
+      request<string[]>(async () => {
         const extensions: Record<string, string> = {
           "image/jpeg": "jpg",
           "image/png": "png",
           "image/webp": "webp",
         };
-        const extension = extensions[file.type];
-        if (!extension || file.size > 2 * 1024 * 1024) {
+        const invalidFile = files.find(
+          (file) => !extensions[file.type] || file.size > 2 * 1024 * 1024,
+        );
+        if (invalidFile) {
           return {
             data: null,
             error: {
@@ -327,24 +339,46 @@ export const api = {
           };
         }
 
-        const objectPath = `posts/${crypto.randomUUID()}.${extension}`;
-        const { error } = await supabase.storage
-          .from("product-images")
-          .upload(objectPath, file, { cacheControl: "3600", upsert: false });
-        if (error) return { data: null, error };
+        const uploadedPaths: string[] = [];
+        const publicUrls: string[] = [];
+        for (const file of files) {
+          const objectPath = `posts/${crypto.randomUUID()}.${extensions[file.type]}`;
+          const { error } = await supabase.storage
+            .from("product-images")
+            .upload(objectPath, file, { cacheControl: "3600", upsert: false });
+          if (error) {
+            if (uploadedPaths.length) {
+              const { error: cleanupError } = await supabase.storage
+                .from("product-images")
+                .remove(uploadedPaths);
+              if (cleanupError) {
+                return {
+                  data: null,
+                  error: {
+                    message: `${error.message}; không thể dọn một số ảnh đã tải lên: ${cleanupError.message}`,
+                  },
+                };
+              }
+            }
+            return { data: null, error };
+          }
+          uploadedPaths.push(objectPath);
 
-        const { data } = supabase.storage
-          .from("product-images")
-          .getPublicUrl(objectPath);
-        return { data: data.publicUrl, error: null };
+          const { data } = supabase.storage
+            .from("product-images")
+            .getPublicUrl(objectPath);
+          publicUrls.push(data.publicUrl);
+        }
+        return { data: publicUrls, error: null };
       }),
 
-    deletePostImage: (imageUrl: string) =>
+    deletePostImages: (imageUrls: string[]) =>
       request<{ deleted: boolean }>(async () => {
-        const objectPath = postImageObjectPath(imageUrl);
+        if (!imageUrls.length) return { data: { deleted: true }, error: null };
+        const objectPaths = postImageObjectPaths(imageUrls);
         const { error } = await supabase.storage
           .from("product-images")
-          .remove([objectPath]);
+          .remove(objectPaths);
         return { data: { deleted: !error }, error };
       }),
 
@@ -371,11 +405,16 @@ export const api = {
 
         const { error } = await supabase.from("posts").delete().eq("id", id);
         if (error) return { data: null, error };
-        if (post.image) {
-          const objectPath = postImageObjectPath(post.image);
+        const images: string[] = Array.isArray(post.images)
+          ? post.images
+          : post.image
+            ? [post.image]
+            : [];
+        if (images.length) {
+          const objectPaths = postImageObjectPaths(images);
           const { error: imageError } = await supabase.storage
             .from("product-images")
-            .remove([objectPath]);
+            .remove(objectPaths);
           if (imageError) {
             return {
               data: toPost(post),

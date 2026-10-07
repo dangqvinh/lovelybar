@@ -23,13 +23,18 @@ export default function Posts() {
         <div className="space-y-4">
           {data.map((post) => (
             <article key={post.id} className="card p-5 sm:p-6">
-              {post.image && (
+              {post.images[0] && (
                 <img
-                  src={post.image}
+                  src={post.images[0]}
                   alt={post.title}
                   loading="lazy"
                   className="mb-4 max-h-80 w-full rounded-2xl object-cover"
                 />
+              )}
+              {post.images.length > 1 && (
+                <p className="mb-3 text-xs text-ink-soft">
+                  {post.images.length} ảnh
+                </p>
               )}
               <p className="text-sm text-ink-soft">
                 {formatDate(post.createdAt)}

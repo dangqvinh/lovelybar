@@ -75,6 +75,20 @@ export default function AdminPosts() {
               className="card flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center"
             >
               <div className="min-w-0">
+                {post.images[0] && (
+                  <div className="mb-3 flex items-center gap-2">
+                    <img
+                      src={post.images[0]}
+                      alt=""
+                      className="h-12 w-12 rounded-lg object-cover"
+                    />
+                    {post.images.length > 1 && (
+                      <span className="text-xs text-ink-soft">
+                        +{post.images.length - 1} ảnh
+                      </span>
+                    )}
+                  </div>
+                )}
                 <p className="text-xs text-ink-soft">
                   {formatDate(post.createdAt)}
                 </p>
