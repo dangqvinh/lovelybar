@@ -48,9 +48,13 @@
   .label {
     @apply mb-1.5 block text-sm font-medium;
   }
+}
+
+@media (max-width: 767px) {
   .post-feed-scroll {
     scrollbar-width: none;
   }
+
   .post-feed-scroll::-webkit-scrollbar {
     display: none;
   }

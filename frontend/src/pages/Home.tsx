@@ -101,36 +101,44 @@ export default function Home() {
             text="Thông tin mới sẽ được cập nhật tại đây."
           />
         ) : (
-          <div className="grid gap-4 md:grid-cols-3">
-            {posts.data.slice(0, 3).map((post) => (
-              <article key={post.id} className="card overflow-hidden">
-                {post.images[0] && (
-                  <div className="aspect-square overflow-hidden bg-pink-50">
-                    <img
-                      src={post.images[0]}
-                      alt={post.title}
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                    />
+          <div>
+            <p className="mb-2 px-1 text-xs font-medium text-ink-soft md:hidden">
+              Vuốt ngang để xem thêm bài đăng
+            </p>
+            <div className="post-feed-scroll -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:p-0">
+              {posts.data.slice(0, 3).map((post) => (
+                <article
+                  key={post.id}
+                  className="w-[82vw] max-w-[20rem] shrink-0 snap-center overflow-hidden rounded-2xl border border-line bg-white shadow-soft md:w-auto md:max-w-none"
+                >
+                  {post.images[0] && (
+                    <div className="aspect-square overflow-hidden bg-pink-50">
+                      <img
+                        src={post.images[0]}
+                        alt={post.title}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="p-5">
+                    <p className="text-xs font-medium text-ink-soft">
+                      {formatDate(post.createdAt)}
+                    </p>
+                    <h3 className="mt-2 text-lg font-bold">{post.title}</h3>
+                    <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm text-ink-soft">
+                      {post.content}
+                    </p>
+                    <Link
+                      to={`/posts/${post.id}`}
+                      className="mt-4 inline-flex text-sm font-semibold text-pink-600 hover:underline"
+                    >
+                      Đọc bài đăng
+                    </Link>
                   </div>
-                )}
-                <div className="p-5">
-                  <p className="text-xs font-medium text-ink-soft">
-                    {formatDate(post.createdAt)}
-                  </p>
-                  <h3 className="mt-2 text-lg font-bold">{post.title}</h3>
-                  <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm text-ink-soft">
-                    {post.content}
-                  </p>
-                  <Link
-                    to={`/posts/${post.id}`}
-                    className="mt-4 inline-flex text-sm font-semibold text-pink-600 hover:underline"
-                  >
-                    Đọc bài đăng
-                  </Link>
-                </div>
-              </article>
-            ))}
+                </article>
+              ))}
+            </div>
           </div>
         )}
       </section>
