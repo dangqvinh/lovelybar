@@ -85,17 +85,23 @@ export default function Cart() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-bold">{i.name}</p>
-                    <p className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
-                      <span>{formatVND(getSalePrice(i.price, saleActive))} / sản phẩm</span>
-                      {saleActive && (
-                        <>
-                          <span className="line-through">{formatVND(i.price)}</span>
-                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-extrabold text-red-700">
-                            SALE -20%
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="flex min-w-0 flex-col items-start">
+                        <span className="font-semibold text-pink-600">
+                          {formatVND(getSalePrice(i.price, saleActive))} / sản phẩm
+                        </span>
+                        {saleActive && (
+                          <span className="text-xs text-ink-soft line-through">
+                            {formatVND(i.price)}
                           </span>
-                        </>
+                        )}
+                      </div>
+                      {saleActive && (
+                        <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-extrabold text-red-700">
+                          -20%
+                        </span>
                       )}
-                    </p>
+                    </div>
                   </div>
                   <button
                     className="text-sm font-semibold text-ink-soft hover:text-red-600"
