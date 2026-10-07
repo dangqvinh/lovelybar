@@ -18,7 +18,7 @@ export default function PriceDisplay({
 
   return (
     <div
-      className={`flex items-center ${singleLine ? "flex-nowrap gap-x-1.5 whitespace-nowrap" : "flex-wrap gap-x-2 gap-y-1"}`}
+      className={`flex min-w-0 items-center ${singleLine ? "flex-wrap gap-x-1.5 gap-y-1" : "flex-wrap gap-x-2 gap-y-1"}`}
     >
       <span className={`${className} ${singleLine ? "whitespace-nowrap" : ""}`}>
         {formatVND(currentPrice)}
