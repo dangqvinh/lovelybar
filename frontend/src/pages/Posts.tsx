@@ -22,70 +22,78 @@ export default function Posts() {
         />
       ) : (
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-          <div className="mx-auto w-full max-w-2xl space-y-5">
-            {data.map((post) => (
-              <article
-                key={post.id}
-                className="overflow-hidden rounded-2xl border border-line bg-white shadow-soft"
-              >
-                <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
-                  <div
-                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-pink-400 via-pink-500 to-orange-400 p-[2px]"
-                    aria-hidden
-                  >
-                    <span className="grid h-full w-full place-items-center rounded-full bg-white text-sm font-extrabold text-pink-600">
-                      LB
-                    </span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold">LovelyBar</p>
-                    <div className="flex items-center gap-1 text-xs text-ink-soft">
-                      <time dateTime={post.createdAt}>
-                        {formatDate(post.createdAt)}
-                      </time>
-                      <span aria-hidden>·</span>
-                      <svg
-                        className="h-3.5 w-3.5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        aria-label="Công khai"
-                      >
-                        <circle cx="12" cy="12" r="9" />
-                        <path d="M3 12h18M12 3a15 15 0 0 1 0 18m0-18a15 15 0 0 0 0 18" />
-                      </svg>
+          <div className="min-w-0">
+            <p className="mb-2 px-1 text-xs font-medium text-ink-soft sm:hidden">
+              Vuốt ngang để xem thêm bài đăng
+            </p>
+            <div
+              className="post-feed-scroll -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 lg:mx-auto lg:block lg:max-w-2xl lg:space-y-5 lg:overflow-visible lg:p-0"
+              aria-label="Bảng tin bài đăng, vuốt ngang để xem thêm"
+            >
+              {data.map((post) => (
+                <article
+                  key={post.id}
+                  className="w-[88vw] max-w-[26rem] shrink-0 snap-center overflow-hidden rounded-2xl border border-line bg-white shadow-soft lg:w-full lg:max-w-none"
+                >
+                  <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
+                    <div
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-pink-400 via-pink-500 to-orange-400 p-[2px]"
+                      aria-hidden
+                    >
+                      <span className="grid h-full w-full place-items-center rounded-full bg-white text-sm font-extrabold text-pink-600">
+                        LB
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold">LovelyBar</p>
+                      <div className="flex items-center gap-1 text-xs text-ink-soft">
+                        <time dateTime={post.createdAt}>
+                          {formatDate(post.createdAt)}
+                        </time>
+                        <span aria-hidden>·</span>
+                        <svg
+                          className="h-3.5 w-3.5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          aria-label="Công khai"
+                        >
+                          <circle cx="12" cy="12" r="9" />
+                          <path d="M3 12h18M12 3a15 15 0 0 1 0 18m0-18a15 15 0 0 0 0 18" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="px-4 pb-4 sm:px-5">
-                  <h2 className="text-lg font-bold leading-snug">{post.title}</h2>
-                  {post.content && (
-                    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-ink-soft line-clamp-4">
-                      {post.content}
-                    </p>
+                  <div className="px-4 pb-4 sm:px-5">
+                    <h2 className="text-lg font-bold leading-snug">{post.title}</h2>
+                    {post.content && (
+                      <p className="mt-2 whitespace-pre-line text-sm leading-6 text-ink-soft line-clamp-4">
+                        {post.content}
+                      </p>
+                    )}
+                  </div>
+
+                  {post.images.length > 0 && (
+                    <PostImageGallery
+                      images={post.images}
+                      title={post.title}
+                      preview
+                    />
                   )}
-                </div>
 
-                {post.images.length > 0 && (
-                  <PostImageGallery
-                    images={post.images}
-                    title={post.title}
-                    preview
-                  />
-                )}
-
-                <div className="px-4 py-3 sm:px-5">
-                  <Link
-                    to={`/posts/${post.id}`}
-                    className="flex min-h-11 items-center justify-center rounded-xl bg-pink-50 px-4 text-sm font-bold text-pink-700 transition hover:bg-pink-100"
-                  >
-                    Xem bài viết
-                  </Link>
-                </div>
-              </article>
-            ))}
+                  <div className="px-4 py-3 sm:px-5">
+                    <Link
+                      to={`/posts/${post.id}`}
+                      className="flex min-h-11 items-center justify-center rounded-xl bg-pink-50 px-4 text-sm font-bold text-pink-700 transition hover:bg-pink-100"
+                    >
+                      Xem bài viết
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
 
           <aside className="sticky top-24 hidden space-y-4 lg:block">
