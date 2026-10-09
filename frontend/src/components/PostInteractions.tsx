@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import ConfirmDialog from "./ConfirmDialog";
 import { useAsync } from "../hooks/useAsync";
@@ -53,6 +53,23 @@ export default function PostInteractions({
   );
   const [realtimeAttempt, setRealtimeAttempt] = useState(0);
   const [realtimeError, setRealtimeError] = useState<string | null>(null);
+  const commentPreviews = useMemo(
+    () => commentFiles.map((file) => ({ file, url: URL.createObjectURL(file) })),
+    [commentFiles],
+  );
+  const replyPreviews = useMemo(
+    () => replyFiles.map((file) => ({ file, url: URL.createObjectURL(file) })),
+    [replyFiles],
+  );
+
+  useEffect(
+    () => () => commentPreviews.forEach(({ url }) => URL.revokeObjectURL(url)),
+    [commentPreviews],
+  );
+  useEffect(
+    () => () => replyPreviews.forEach(({ url }) => URL.revokeObjectURL(url)),
+    [replyPreviews],
+  );
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -100,7 +117,8 @@ export default function PostInteractions({
 
   function selectImages(files: FileList | null, isReply: boolean) {
     const selected = Array.from(files ?? []);
-    if (selected.length > 5) {
+    const currentFiles = isReply ? replyFiles : commentFiles;
+    if (currentFiles.length + selected.length > 5) {
       toast.error("Mỗi bình luận chỉ được đính kèm tối đa 5 ảnh.");
       return;
     }
@@ -113,8 +131,8 @@ export default function PostInteractions({
       toast.error("Ảnh phải là JPG, PNG hoặc WEBP và có dung lượng tối đa 2 MB.");
       return;
     }
-    if (isReply) setReplyFiles(selected);
-    else setCommentFiles(selected);
+    if (isReply) setReplyFiles((current) => [...current, ...selected]);
+    else setCommentFiles((current) => [...current, ...selected]);
   }
 
   async function submitComment(
@@ -338,45 +356,113 @@ export default function PostInteractions({
               </p>
             )}
             {item.images.length > 0 && (
-              <div className="mt-2 grid max-w-lg grid-cols-2 gap-2 sm:grid-cols-3">
-                {item.images.map((image, index) => (
+              <div
+                className={`mt-2 grid max-w-lg overflow-hidden rounded-xl ${
+                  item.images.length === 1
+                    ? "aspect-[4/3] grid-cols-1"
+                    : item.images.length === 2
+                      ? "aspect-[4/3] grid-cols-2 gap-1"
+                      : item.images.length === 3
+                        ? "aspect-square grid-cols-[2fr_1fr] grid-rows-2 gap-1"
+                        : "aspect-square grid-cols-2 grid-rows-2 gap-1"
+                }`}
+              >
+                {item.images.slice(0, 4).map((image, index) => (
                   <a
                     key={`${item.id}-${image}`}
                     href={image}
                     target="_blank"
                     rel="noreferrer"
                     aria-label={`Mở ảnh ${index + 1} của bình luận`}
-                    className="overflow-hidden rounded-xl"
+                    className={`relative min-h-0 overflow-hidden bg-pink-100 ${
+                      item.images.length === 3 && index === 0 ? "row-span-2" : ""
+                    }`}
                   >
                     <img
                       src={image}
                       alt={`Ảnh ${index + 1} đính kèm`}
                       loading="lazy"
-                      className="aspect-square w-full object-cover"
+                      className="absolute inset-0 h-full w-full object-cover"
                     />
+                    {index === 3 && item.images.length > 4 && (
+                      <span className="absolute inset-0 grid place-items-center bg-black/55 text-2xl font-bold text-white">
+                        +{item.images.length - 4}
+                      </span>
+                    )}
                   </a>
                 ))}
               </div>
             )}
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  item.myReaction
-                    ? "bg-pink-100 text-pink-700"
-                    : "text-ink-soft hover:bg-white"
-                }`}
-                aria-expanded={commentReactionMenuId === item.id}
-                onClick={() =>
-                  setCommentReactionMenuId((current) =>
-                    current === item.id ? null : item.id,
-                  )
-                }
-                disabled={busy}
-              >
-                {REACTIONS.find((reaction) => reaction.value === item.myReaction)?.emoji ?? "👍"}{" "}
-                {REACTIONS.find((reaction) => reaction.value === item.myReaction)?.label ?? "Thích"}
-              </button>
+              <div className="group/comment-reaction relative inline-flex items-center">
+                <button
+                  type="button"
+                  title={item.myReaction ? "Gỡ reaction" : "Thích"}
+                  aria-label={
+                    item.myReaction
+                      ? `Bỏ ${REACTIONS.find((reaction) => reaction.value === item.myReaction)?.label ?? "reaction"}`
+                      : "Thích bình luận"
+                  }
+                  aria-pressed={Boolean(item.myReaction)}
+                  disabled={busy}
+                  onClick={() =>
+                    void reactToComment(item.id, item.myReaction ?? "LIKE")
+                  }
+                  className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition ${
+                    item.myReaction
+                      ? "border-pink-300 bg-pink-100 text-pink-700"
+                      : "border-transparent text-ink-soft hover:border-line hover:bg-white"
+                  }`}
+                >
+                  <span aria-hidden>
+                    {REACTIONS.find((reaction) => reaction.value === item.myReaction)?.emoji ?? "👍"}
+                  </span>
+                  <span>
+                    {REACTIONS.find((reaction) => reaction.value === item.myReaction)?.label ?? "Thích"}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="ml-1 grid h-8 w-7 place-items-center rounded-full text-xs text-ink-soft hover:bg-white sm:hidden"
+                  aria-label="Chọn cảm xúc cho bình luận"
+                  aria-expanded={commentReactionMenuId === item.id}
+                  onClick={() =>
+                    setCommentReactionMenuId((current) =>
+                      current === item.id ? null : item.id,
+                    )
+                  }
+                >
+                  ▴
+                </button>
+                <div className="absolute bottom-full left-0 z-20 pb-2">
+                  <div
+                    className={`flex origin-bottom-left items-center gap-1 rounded-full border border-line bg-white p-1.5 shadow-lift transition duration-150 ${
+                      commentReactionMenuId === item.id
+                        ? "visible scale-100 opacity-100"
+                        : "invisible scale-95 opacity-0 group-hover/comment-reaction:visible group-hover/comment-reaction:scale-100 group-hover/comment-reaction:opacity-100 group-focus-within/comment-reaction:visible group-focus-within/comment-reaction:scale-100 group-focus-within/comment-reaction:opacity-100"
+                    }`}
+                    role="group"
+                    aria-label="Chọn reaction cho bình luận"
+                  >
+                    {REACTIONS.map(({ value, emoji, label }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        title={`${label} (${item.reactionCounts[value] ?? 0})`}
+                        aria-label={`${label}, ${item.reactionCounts[value] ?? 0}`}
+                        aria-pressed={item.myReaction === value}
+                        disabled={busy}
+                        onClick={() => void reactToComment(item.id, value)}
+                        className={`grid h-9 w-9 place-items-center rounded-full text-xl transition hover:-translate-y-1 hover:scale-125 ${
+                          item.myReaction === value ? "bg-pink-100" : "hover:bg-pink-50"
+                        }`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
               {Object.entries(item.reactionCounts)
                 .filter(([, count]) => count > 0)
                 .sort((a, b) => b[1] - a[1])
@@ -386,26 +472,6 @@ export default function PostInteractions({
                   </span>
                 ))}
             </div>
-            {commentReactionMenuId === item.id && (
-              <div className="mt-2 flex flex-wrap gap-1" role="group" aria-label="Chọn cảm xúc cho bình luận">
-                {REACTIONS.map(({ value, emoji, label }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    title={label}
-                    aria-label={label}
-                    aria-pressed={item.myReaction === value}
-                    disabled={busy}
-                    onClick={() => void reactToComment(item.id, value)}
-                    className={`grid h-9 w-9 place-items-center rounded-full text-xl hover:bg-white ${
-                      item.myReaction === value ? "bg-white" : ""
-                    }`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
           <div className="flex shrink-0 flex-col items-start gap-1">
             {!moderator && canEdit && editingCommentId !== item.id && (
@@ -483,7 +549,11 @@ export default function PostInteractions({
                 <button
                   type="button"
                   className="btn-outline !min-h-9 !px-3 !py-1"
-                  onClick={() => setReplyingToId(null)}
+                  onClick={() => {
+                    setReplyingToId(null);
+                    setReplyFiles([]);
+                    setReplyContent("");
+                  }}
                   disabled={busy}
                 >
                   Hủy
@@ -497,10 +567,22 @@ export default function PostInteractions({
                 </button>
               </div>
             </div>
-            {replyFiles.length > 0 && (
-              <p className="text-xs text-ink-soft">
-                {replyFiles.map((file) => file.name).join(" · ")}
-              </p>
+            {replyPreviews.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {replyPreviews.map(({ file, url }, index) => (
+                  <div key={`${file.name}-${file.lastModified}-${index}`} className="relative h-16 w-16 overflow-hidden rounded-lg">
+                    <img src={url} alt={`Ảnh xem trước ${index + 1}`} className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      aria-label={`Xóa ảnh ${file.name}`}
+                      onClick={() => setReplyFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))}
+                      className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/70 text-sm font-bold text-white"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </form>
         )}
@@ -696,10 +778,22 @@ export default function PostInteractions({
             {busy ? "Đang gửi..." : "Gửi"}
           </button>
         </div>
-        {commentFiles.length > 0 && (
-          <p className="pl-11 text-xs text-ink-soft">
-            {commentFiles.map((file) => file.name).join(" · ")}
-          </p>
+        {commentPreviews.length > 0 && (
+          <div className="flex flex-wrap gap-2 pl-11">
+            {commentPreviews.map(({ file, url }, index) => (
+              <div key={`${file.name}-${file.lastModified}-${index}`} className="relative h-16 w-16 overflow-hidden rounded-lg">
+                <img src={url} alt={`Ảnh xem trước ${index + 1}`} className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  aria-label={`Xóa ảnh ${file.name}`}
+                  onClick={() => setCommentFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))}
+                  className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/70 text-sm font-bold text-white"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </form>
       {!moderator && (

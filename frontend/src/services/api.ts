@@ -278,7 +278,18 @@ function toProductSalesReportRow(row: any): ProductSalesReportRow {
 }
 
 export const api = {
-  getCommentAuthor: () => sessionStorage.getItem(COMMENT_AUTHOR_SESSION_KEY) ?? "",
+  getCommentAuthor: () => {
+    const author = sessionStorage.getItem(COMMENT_AUTHOR_SESSION_KEY)?.trim() ?? "";
+    if (
+      !author ||
+      author.length > 40 ||
+      author.toLocaleLowerCase() === "admin"
+    ) {
+      sessionStorage.removeItem(COMMENT_AUTHOR_SESSION_KEY);
+      return "";
+    }
+    return author;
+  },
 
   saveCommentAuthor: (author: string) =>
     sessionStorage.setItem(COMMENT_AUTHOR_SESSION_KEY, author),
