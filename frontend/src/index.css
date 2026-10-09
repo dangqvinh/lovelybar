@@ -3,11 +3,24 @@
 @tailwind utilities;
 
 @layer base {
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-width: 0;
+  }
+
   html {
     scroll-behavior: smooth;
   }
+
   body {
     @apply bg-blush font-sans text-ink antialiased;
+    overflow-x: clip;
+  }
+
+  #root {
+    overflow-x: clip;
   }
   :focus-visible {
     @apply outline-none ring-2 ring-pink-400 ring-offset-2 ring-offset-blush;
@@ -41,6 +54,10 @@
   }
   .card {
     @apply rounded-3xl border border-line bg-white shadow-soft;
+  }
+
+  main {
+    min-width: 0;
   }
   .input {
     @apply w-full rounded-2xl border border-line bg-white px-4 py-2.5 text-sm placeholder:text-ink-soft/60 focus:border-pink-400 focus:outline-none focus:ring-2 focus:ring-pink-200;
@@ -78,6 +95,17 @@
 }
 
 @media (max-width: 480px) {
+  .shop-nav {
+    min-width: 0;
+    max-width: 65vw;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .shop-nav::-webkit-scrollbar {
+    display: none;
+  }
+
   .shop-nav > a {
     padding-right: 0.5rem;
     padding-left: 0.5rem;

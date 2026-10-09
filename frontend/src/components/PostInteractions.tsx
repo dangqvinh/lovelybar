@@ -275,7 +275,7 @@ export default function PostInteractions({
     return (
       <div
         key={item.id}
-        className={depth > 0 ? "ml-7 border-l-2 border-pink-100 pl-3 sm:ml-10" : ""}
+        className={depth > 0 ? "ml-3 min-w-0 border-l-2 border-pink-100 pl-2 sm:ml-5 sm:pl-3" : "min-w-0"}
       >
         <article className="flex items-start gap-2">
           <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-bold ${

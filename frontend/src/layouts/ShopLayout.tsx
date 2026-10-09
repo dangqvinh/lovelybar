@@ -37,12 +37,12 @@ export default function ShopLayout() {
     count > 0 && pathname !== "/cart" && pathname !== "/checkout";
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen w-full min-w-0 flex-col">
       <header className="sticky top-0 z-30 border-b border-line bg-blush/90 backdrop-blur">
-        <div className="shop-header-inner mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+        <div className="shop-header-inner mx-auto flex w-full min-w-0 max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <Logo />
           <nav
-            className="shop-nav flex items-center gap-1"
+            className="shop-nav flex min-w-0 items-center gap-1"
             aria-label="Điều hướng chính"
           >
             <NavLink to="/" end className={navCls}>
@@ -71,7 +71,7 @@ export default function ShopLayout() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:py-10">
+      <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-8 sm:py-10">
         <Outlet />
       </main>
 
