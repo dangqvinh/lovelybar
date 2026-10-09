@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   buildVietQrPayload,
   resolveBankBin,
+  validateDonationRequest,
   validateQrRequest,
 } from "./vietqr.ts";
 
@@ -33,50 +34,68 @@ serve(async (request) => {
       return jsonResponse({ error: "Invalid request body" }, 400);
     }
 
-    let parsedRequest: { orderCode: string };
+    const isDonation = "donationAmount" in body;
+    let amount: number;
+    let orderCode: string;
     try {
-      parsedRequest = validateQrRequest(body as Record<string, unknown>);
+      if (isDonation) {
+        amount = validateDonationRequest(body as Record<string, unknown>).amount;
+        orderCode = `BAR${crypto.randomUUID().replaceAll("-", "").slice(0, 16).toUpperCase()}`;
+      } else {
+        orderCode = validateQrRequest(body as Record<string, unknown>).orderCode;
+      }
     } catch (error) {
       return jsonResponse(
         { error: error instanceof Error ? error.message : "Invalid request body" },
         400,
       );
     }
-    const orderCode = parsedRequest.orderCode;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!supabaseUrl || !serviceRoleKey) {
       return jsonResponse({ error: "Supabase server credentials are missing" }, 500);
     }
-
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
-    const { data: order, error } = await supabase
-      .from("orders")
-      .select("order_code, total_amount, order_status")
-      .eq("order_code", orderCode)
-      .maybeSingle();
 
-    if (error) throw error;
-    if (!order) return jsonResponse({ error: "Order not found" }, 404);
-    if (order.order_status === "CANCELLED") {
-      return jsonResponse({ error: "This order was cancelled" }, 400);
+    if (isDonation) {
+      const { data: settings, error } = await supabase
+        .from("donation_settings")
+        .select("is_enabled")
+        .eq("id", true)
+        .maybeSingle();
+      if (error) throw error;
+      if (!settings?.is_enabled) {
+        return jsonResponse({ error: "Donations are not enabled" }, 403);
+      }
+    } else {
+      const { data: order, error } = await supabase
+        .from("orders")
+        .select("order_code, total_amount, order_status")
+        .eq("order_code", orderCode)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!order) return jsonResponse({ error: "Order not found" }, 404);
+      if (order.order_status === "CANCELLED") {
+        return jsonResponse({ error: "This order was cancelled" }, 400);
+      }
+      amount = Number(order.total_amount);
     }
 
     const bankCode = Deno.env.get("PAYMENT_BANK_CODE") ?? "";
     const bankBin = resolveBankBin(bankCode, Deno.env.get("PAYMENT_BANK_BIN"));
     const accountNumber = Deno.env.get("PAYMENT_BANK_ACCOUNT") ?? "";
     const accountName = Deno.env.get("PAYMENT_BANK_NAME") ?? "";
-    const amount = Number(order.total_amount);
     if (!accountNumber || !accountName) {
       return jsonResponse({ error: "Payment configuration is incomplete" }, 500);
     }
 
-    const qrPayload = buildVietQrPayload(bankBin, accountNumber, amount, order.order_code);
+    const qrPayload = buildVietQrPayload(bankBin, accountNumber, amount, orderCode);
     return jsonResponse({
-      orderCode: order.order_code,
+      orderCode,
       amount,
       paymentMethod: "BANK",
       qrPayload,

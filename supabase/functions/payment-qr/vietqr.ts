@@ -20,7 +20,7 @@ const bankBins: Record<string, string> = {
 export function validateQrRequest(input: Record<string, unknown>): {
   orderCode: string;
 } {
-  if ("amount" in input) {
+  if ("amount" in input || "donationAmount" in input) {
     throw new Error("Amount must not be provided");
   }
   const orderCode = typeof input.orderCode === "string" ? input.orderCode.trim() : "";
@@ -28,6 +28,19 @@ export function validateQrRequest(input: Record<string, unknown>): {
     throw new Error("orderCode is required and paymentMethod must be BANK");
   }
   return { orderCode };
+}
+
+export function validateDonationRequest(input: Record<string, unknown>): {
+  amount: number;
+} {
+  if ("orderCode" in input || "paymentMethod" in input) {
+    throw new Error("Donation amount must be provided without an order");
+  }
+  const amount = input.donationAmount;
+  if (typeof amount !== "number" || !Number.isSafeInteger(amount) || amount <= 0) {
+    throw new Error("Donation amount must be a positive integer");
+  }
+  return { amount };
 }
 
 function tlv(tag: string, value: string): string {

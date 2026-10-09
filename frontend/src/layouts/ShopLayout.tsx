@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import Logo from "../components/Logo";
+import { useAsync } from "../hooks/useAsync";
+import { api } from "../services/api";
 import { cartCount, useCart } from "../store/cart";
 
 function CartIcon() {
@@ -26,6 +28,7 @@ function CartIcon() {
 
 export default function ShopLayout() {
   const count = useCart((s) => cartCount(s.items));
+  const donation = useAsync(api.donationSettings);
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -54,6 +57,11 @@ export default function ShopLayout() {
             <NavLink to="/posts" className={navCls}>
               Bài đăng
             </NavLink>
+            {donation.data?.isEnabled && (
+              <NavLink to="/donate" className={navCls}>
+                Ủng hộ
+              </NavLink>
+            )}
             <Link
               to="/cart"
               className="btn-soft relative ml-1 !px-4"
@@ -70,6 +78,12 @@ export default function ShopLayout() {
           </nav>
         </div>
       </header>
+
+      {donation.error && (
+        <p role="alert" className="bg-amber-50 px-4 py-2 text-center text-xs text-amber-800">
+          Không thể tải trạng thái mục ủng hộ: {donation.error}
+        </p>
+      )}
 
       <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-8 sm:py-10">
         <Outlet />

@@ -91,6 +91,13 @@ export interface QRResult {
   accountName?: string
 }
 
+export interface DonationSettings {
+  isEnabled: boolean
+  message: string
+  disclaimer: string
+  presetAmounts: number[]
+}
+
 export interface Stats {
   totalProducts: number
   totalOrders: number

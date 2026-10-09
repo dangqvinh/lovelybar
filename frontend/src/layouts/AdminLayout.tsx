@@ -48,6 +48,9 @@ export default function AdminLayout() {
             <NavLink to="/admin/reports" className={cls}>
               Báo cáo
             </NavLink>
+            <NavLink to="/admin/donation" className={cls}>
+              Ủng hộ
+            </NavLink>
             <button
               type="button"
               onClick={handleLogout}

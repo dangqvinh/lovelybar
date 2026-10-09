@@ -7,10 +7,11 @@ interface Props {
   qr: QRResult;
   /** Show a link to the order page (used on the checkout page). */
   showOrderLink?: boolean;
+  donation?: boolean;
 }
 
 /** Large, phone-scannable QR with the exact amount from the backend. Never claims the payment is done. */
-export default function QrPanel({ qr, showOrderLink }: Props) {
+export default function QrPanel({ qr, showOrderLink, donation = false }: Props) {
   async function saveToPhotos() {
     if (
       typeof navigator.share !== "function" ||
@@ -52,13 +53,19 @@ export default function QrPanel({ qr, showOrderLink }: Props) {
   return (
     <section
       className="rounded-3xl border border-pink-200 bg-pink-50/60 p-5 text-center sm:p-6"
-      aria-label="Mã QR thanh toán"
+      aria-label={donation ? "Mã QR ủng hộ" : "Mã QR thanh toán"}
     >
-      <h3 className="text-lg font-bold">Mã QR thanh toán</h3>
+      <h3 className="text-lg font-bold">
+        {donation ? "Mã QR ủng hộ" : "Mã QR thanh toán"}
+      </h3>
       <div className="mx-auto mt-4 w-full max-w-[320px] rounded-3xl bg-white p-3 shadow-soft">
         <img
           src={qr.qrCode}
-          alt={`Mã QR chuyển ${formatVND(qr.amount)} cho đơn hàng ${qr.orderCode}`}
+          alt={
+            donation
+              ? `Mã QR ủng hộ ${formatVND(qr.amount)}`
+              : `Mã QR chuyển ${formatVND(qr.amount)} cho đơn hàng ${qr.orderCode}`
+          }
           className="aspect-square w-full"
         />
       </div>
@@ -96,11 +103,12 @@ export default function QrPanel({ qr, showOrderLink }: Props) {
         <p className="font-bold">{qr.orderCode}</p>
       </div>
       <p className="mt-3 text-sm text-ink-soft">
-        Quét mã QR bằng ứng dụng ngân hàng để chuyển khoản. Vui lòng giữ nguyên
-        nội dung chuyển khoản.
+        Quét mã QR bằng ứng dụng ngân hàng để chuyển khoản. Vui lòng giữ nguyên{" "}
+        {donation ? "nội dung ủng hộ" : "nội dung chuyển khoản"}.
       </p>
       <p className="mt-2 text-sm font-semibold text-amber-800">
-        Mã QR chỉ hỗ trợ chuyển khoản, không xác nhận thanh toán thành công.
+        Mã QR chỉ hỗ trợ chuyển khoản, không xác nhận
+        {donation ? " đã nhận tiền ủng hộ." : " thanh toán thành công."}
       </p>
       <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
         <button type="button" onClick={saveToPhotos} className="btn-primary">

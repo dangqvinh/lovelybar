@@ -3,6 +3,7 @@ import {
   crc16CcittFalse,
   resolveBankBin,
   sanitizeNote,
+  validateDonationRequest,
   validateQrRequest,
 } from "./vietqr.ts";
 
@@ -89,10 +90,38 @@ Deno.test("QR request rejects a caller-supplied amount", () => {
       paymentMethod: "BANK",
       amount: 1,
     });
+    validateQrRequest({
+      orderCode: "LB20261003001",
+      paymentMethod: "BANK",
+      donationAmount: 1,
+    });
   } catch {
     rejected = true;
   }
   if (!rejected) throw new Error("Expected the supplied amount to be rejected");
+});
+
+Deno.test("donation QR request accepts a positive integer amount", () => {
+  const parsed = validateDonationRequest({ donationAmount: 5_000 });
+  if (parsed.amount !== 5_000) throw new Error("Unexpected donation amount");
+});
+
+Deno.test("donation QR request rejects invalid amounts and order fields", () => {
+  for (const input of [
+    { donationAmount: 0 },
+    { donationAmount: -1 },
+    { donationAmount: 1.5 },
+    { donationAmount: Number.MAX_SAFE_INTEGER + 1 },
+    { donationAmount: 5_000, orderCode: "LB123" },
+  ]) {
+    let rejected = false;
+    try {
+      validateDonationRequest(input);
+    } catch {
+      rejected = true;
+    }
+    if (!rejected) throw new Error(`Expected request to be rejected: ${JSON.stringify(input)}`);
+  }
 });
 
 Deno.test("transfer note is ASCII and at most 25 characters", () => {

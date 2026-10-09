@@ -64,6 +64,13 @@ dạng in hoa và dạng có dấu. Cập nhật secrets hiện dùng trước k
    (https://api.vietqr.io/v2/banks) hoặc đặt `PAYMENT_BANK_BIN`.
 3. Sau khi thay code Edge Function, deploy lại bằng `npx supabase functions deploy payment-qr`.
 
+## Cấu hình nhận ủng hộ
+
+Sau khi chạy migration bằng `npx supabase db push` và deploy Edge Function,
+quản trị viên có thể vào **Quản trị → Ủng hộ** để sửa nội dung, các mức tiền
+gợi ý và xem trước. Mục ủng hộ mặc định đang tắt; chỉ bật công khai sau khi đã
+duyệt nội dung. Mã QR ủng hộ chỉ được tạo khi mục này đang bật.
+
 ## Cách tính tiền và QR
 
 ```text

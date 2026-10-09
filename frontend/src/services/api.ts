@@ -2,6 +2,7 @@ import type {
   Order,
   OrderItem,
   OrderStatus,
+  DonationSettings,
   PaymentMethod,
   Post,
   PostComment,
@@ -549,7 +550,109 @@ export const api = {
     });
   },
 
+  generateDonationQR: async (amount: number) => {
+    return request<QRResult>(async () => {
+      const { data, error } = await supabase.functions.invoke("payment-qr", {
+        body: { donationAmount: amount },
+      });
+      if (error) return { data: null, error };
+      if (
+        !data?.qrPayload ||
+        !Number.isSafeInteger(Number(data.amount)) ||
+        Number(data.amount) !== amount
+      ) {
+        return { data: null, error: { message: "Invalid payment QR response" } };
+      }
+
+      const qrCode = await (await import("qrcode")).default.toDataURL(data.qrPayload, {
+        errorCorrectionLevel: "M",
+        margin: 2,
+        width: 640,
+      });
+      return {
+        data: {
+          orderId: 0,
+          orderCode: data.orderCode,
+          amount,
+          paymentMethod: "BANK",
+          qrCode,
+          bankName: data.bankName,
+          accountNumber: data.accountNumber,
+          accountName: data.accountName,
+        } satisfies QRResult,
+        error: null,
+      };
+    });
+  },
+
+  donationSettings: () =>
+    request<DonationSettings | null>(async () => {
+      const { data, error } = await supabase
+        .from("donation_settings")
+        .select("is_enabled, message, disclaimer, preset_amounts")
+        .eq("id", true)
+        .maybeSingle();
+      return {
+        data: data
+          ? {
+              isEnabled: data.is_enabled,
+              message: data.message,
+              disclaimer: data.disclaimer,
+              presetAmounts: data.preset_amounts.map(Number),
+            }
+          : null,
+        error,
+      };
+    }),
+
   admin: {
+    donationSettings: () =>
+      request<DonationSettings>(async () => {
+        const { data, error } = await supabase
+          .from("donation_settings")
+          .select("is_enabled, message, disclaimer, preset_amounts")
+          .eq("id", true)
+          .single();
+        return {
+          data: data
+            ? {
+                isEnabled: data.is_enabled,
+                message: data.message,
+                disclaimer: data.disclaimer,
+                presetAmounts: data.preset_amounts.map(Number),
+              }
+            : null,
+          error,
+        };
+      }),
+
+    updateDonationSettings: (settings: DonationSettings) =>
+      request<DonationSettings>(async () => {
+        const { data, error } = await supabase
+          .from("donation_settings")
+          .update({
+            is_enabled: settings.isEnabled,
+            message: settings.message,
+            disclaimer: settings.disclaimer,
+            preset_amounts: settings.presetAmounts,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", true)
+          .select("is_enabled, message, disclaimer, preset_amounts")
+          .single();
+        return {
+          data: data
+            ? {
+                isEnabled: data.is_enabled,
+                message: data.message,
+                disclaimer: data.disclaimer,
+                presetAmounts: data.preset_amounts.map(Number),
+              }
+            : null,
+          error,
+        };
+      }),
+
     posts: () =>
       request<Post[]>(async () => {
         const { data, error } = await supabase

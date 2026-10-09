@@ -9,6 +9,7 @@ import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
+import Donation from './pages/Donation';
 import OrderSuccess from './pages/OrderSuccess';
 import Dashboard from './pages/admin/Dashboard';
 import AdminProducts from './pages/admin/AdminProducts';
@@ -21,6 +22,7 @@ import PostDetail from './pages/PostDetail';
 import AdminPosts from './pages/admin/AdminPosts';
 import PostForm from './pages/admin/PostForm';
 import AdminPostDetail from './pages/admin/AdminPostDetail';
+import AdminDonation from './pages/admin/AdminDonation';
 
 function AdminRouteGuard() {
   const [ready, setReady] = useState(false);
@@ -62,6 +64,7 @@ export default function App() {
         <Route path="/products/:id" element={<ProductDetail />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/donate" element={<Donation />} />
         <Route path="/order-success/:code" element={<OrderSuccess />} />
       </Route>
 
@@ -75,6 +78,7 @@ export default function App() {
           <Route path="products/:id/edit" element={<ProductForm />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="donation" element={<AdminDonation />} />
           <Route path="posts" element={<AdminPosts />} />
           <Route path="posts/create" element={<PostForm />} />
           <Route path="posts/:id" element={<AdminPostDetail />} />
