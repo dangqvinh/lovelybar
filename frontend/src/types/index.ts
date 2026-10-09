@@ -34,6 +34,20 @@ export interface PostInput {
   images: string[]
 }
 
+export interface PostComment {
+  id: number
+  author: string
+  content: string
+  createdAt: string
+}
+
+export interface PostInteractions {
+  reactionCounts: Record<string, number>
+  myReaction: string | null
+  comments: PostComment[]
+  commentCount: number
+}
+
 export interface OrderItem {
   id: number
   productId: number | null

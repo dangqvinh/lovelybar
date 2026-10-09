@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, Spinner } from "../components/States";
 import PostImageGallery from "../components/PostImageGallery";
+import PostInteractions from "../components/PostInteractions";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../services/api";
 import { formatDate } from "../utils/format";
@@ -65,6 +66,7 @@ export default function PostDetail() {
         <div className="border-t border-line px-4 py-3 text-xs text-ink-soft sm:px-5">
           Bài đăng từ LovelyBar
         </div>
+        <PostInteractions postId={data.id} />
       </article>
     </div>
   );

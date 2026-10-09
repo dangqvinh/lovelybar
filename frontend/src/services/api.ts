@@ -4,6 +4,8 @@ import type {
   OrderStatus,
   PaymentMethod,
   Post,
+  PostComment,
+  PostInteractions,
   PostInput,
   Product,
   ProductInput,
@@ -48,6 +50,15 @@ const API_ERROR_TRANSLATIONS: Record<string, string> = {
   "This order was cancelled": "Đơn hàng này đã bị hủy.",
   "Could not generate a QR code for this payment method":
     "Không thể tạo mã QR cho phương thức thanh toán này.",
+  "Please wait before commenting again":
+    "Bạn bình luận hơi nhanh, vui lòng đợi một chút rồi thử lại.",
+  "Guest comment limit reached":
+    "Bạn đã đạt giới hạn 20 bình luận trong 24 giờ từ trình duyệt này.",
+  "Comment must be between 1 and 1000 characters":
+    "Bình luận phải có từ 1 đến 1.000 ký tự.",
+  "Invalid reaction": "Cảm xúc không hợp lệ.",
+  "Post not found": "Không tìm thấy bài đăng.",
+  "Admin access required": "Bạn không có quyền thực hiện thao tác này.",
 };
 
 function translateApiMessage(message: string): string {
@@ -108,6 +119,35 @@ function toPost(row: any): Post {
         : [],
     isPublished: Boolean(row.is_published ?? row.isPublished ?? true),
     createdAt: row.created_at ?? row.createdAt ?? new Date().toISOString(),
+  };
+}
+
+function getGuestId(): string {
+  const storageKey = "lovelybar_guest_id";
+  let guestId = localStorage.getItem(storageKey);
+  if (!guestId) {
+    guestId = crypto.randomUUID();
+    localStorage.setItem(storageKey, guestId);
+  }
+  return guestId;
+}
+
+function toPostComment(row: any): PostComment {
+  return {
+    id: Number(row.id),
+    author: row.author ?? "Khách",
+    content: row.content,
+    createdAt: row.createdAt ?? row.created_at,
+  };
+}
+
+function toPostInteractions(row: any): PostInteractions {
+  const comments = row.comments ?? [];
+  return {
+    reactionCounts: row.reactionCounts ?? row.reaction_counts ?? {},
+    myReaction: row.myReaction ?? row.my_reaction ?? null,
+    comments: Array.isArray(comments) ? comments.map(toPostComment) : [],
+    commentCount: Number(row.commentCount ?? row.comment_count ?? comments.length),
   };
 }
 
@@ -186,6 +226,43 @@ function toProductSalesReportRow(row: any): ProductSalesReportRow {
 }
 
 export const api = {
+  postInteractions: (postId: number | string) =>
+    request<PostInteractions>(async () => {
+      const { data, error } = await supabase.rpc("get_post_interactions", {
+        p_post_id: Number(postId),
+        p_guest_id: getGuestId(),
+      });
+      return { data: data ? toPostInteractions(data) : null, error };
+    }),
+
+  addPostComment: (postId: number, content: string) =>
+    request<PostComment>(async () => {
+      const { data, error } = await supabase.rpc("add_post_comment", {
+        p_post_id: postId,
+        p_guest_id: getGuestId(),
+        p_content: content,
+      });
+      return { data: data ? toPostComment(data) : null, error };
+    }),
+
+  setPostReaction: (postId: number, reaction: string | null) =>
+    request<PostInteractions>(async () => {
+      const { data, error } = await supabase.rpc("set_post_reaction", {
+        p_post_id: postId,
+        p_guest_id: getGuestId(),
+        p_reaction: reaction,
+      });
+      return { data: data ? toPostInteractions(data) : null, error };
+    }),
+
+  deletePostComment: (commentId: number) =>
+    request<{ deleted: boolean }>(async () => {
+      const { data, error } = await supabase.rpc("admin_delete_post_comment", {
+        p_comment_id: commentId,
+      });
+      return { data: { deleted: Boolean(data) }, error };
+    }),
+
   posts: () =>
     request<Post[]>(async () => {
       const { data, error } = await supabase

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import PostInteractions from "../components/PostInteractions";
 import PostImageGallery from "../components/PostImageGallery";
 import { EmptyState, ErrorState, Spinner } from "../components/States";
 import { useAsync } from "../hooks/useAsync";
@@ -86,6 +87,7 @@ export default function Posts() {
                     Xem bài viết
                   </Link>
                 </div>
+                <PostInteractions postId={post.id} />
               </article>
             ))}
           </div>

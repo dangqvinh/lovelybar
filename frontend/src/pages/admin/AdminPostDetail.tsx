@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import PostImageGallery from "../../components/PostImageGallery";
+import PostInteractions from "../../components/PostInteractions";
 import { EmptyState, ErrorState, Spinner } from "../../components/States";
 import { useAsync } from "../../hooks/useAsync";
 import { api } from "../../services/api";
@@ -77,6 +78,7 @@ export default function AdminPostDetail() {
         </div>
 
         <PostImageGallery images={data.images} title={data.title} />
+        <PostInteractions postId={data.id} moderator />
       </article>
     </div>
   );
