@@ -105,6 +105,10 @@
   display: none;
 }
 
+.admin-nav-icon {
+  display: none;
+}
+
 @keyframes logo-glimmer {
   0%,
   100% {
@@ -185,6 +189,108 @@
   .shop-header {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+  }
+
+  .admin-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .admin-header-inner {
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .admin-header-inner > div {
+    min-width: 0;
+    gap: 0.4rem;
+  }
+
+  .admin-header-inner > div > a:first-child > span:first-child {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .admin-header-inner > div > a:first-child > span:last-child {
+    font-size: 1.05rem;
+  }
+
+  .admin-header-inner > div > span {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.65rem;
+  }
+
+  .admin-logout {
+    min-height: 2.5rem;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.7rem;
+  }
+
+  .admin-nav {
+    position: fixed;
+    z-index: 40;
+    left: 50%;
+    bottom: max(0.65rem, env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.2rem;
+    width: calc(100% - 1.5rem);
+    max-width: 28rem;
+    min-width: 0;
+    margin: 0;
+    padding: 0.4rem;
+    overflow: visible;
+    transform: translateX(-50%);
+    border: 1px solid rgba(243, 221, 227, 0.95);
+    border-radius: 1.25rem;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 8px 30px -12px rgba(128, 44, 76, 0.3);
+    backdrop-filter: blur(16px);
+  }
+
+  .admin-nav > a {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    min-height: 3rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    padding: 0.3rem 0.1rem;
+    border-radius: 0.85rem;
+    font-size: 0.64rem;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .admin-nav > a[aria-current="page"] {
+    background: #fff1f4;
+    color: #ae1850;
+  }
+
+  .admin-nav > a[aria-current="page"]::after {
+    position: absolute;
+    top: 0.15rem;
+    right: 0.35rem;
+    color: #ec3f72;
+    content: "✦";
+    font-size: 0.55rem;
+    animation: sparkle-twinkle 1.8s ease-in-out infinite;
+  }
+
+  .admin-nav-icon {
+    display: block;
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .admin-main {
+    padding-bottom: 9rem !important;
   }
 
   .shop-nav {
