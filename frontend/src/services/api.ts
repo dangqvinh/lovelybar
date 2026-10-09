@@ -59,6 +59,13 @@ const API_ERROR_TRANSLATIONS: Record<string, string> = {
   "Invalid reaction": "Cảm xúc không hợp lệ.",
   "Post not found": "Không tìm thấy bài đăng.",
   "Admin access required": "Bạn không có quyền thực hiện thao tác này.",
+  "Invalid comment edit token": "Mã chỉnh sửa bình luận không hợp lệ.",
+  "Comment edit is not authorized":
+    "Không thể chỉnh sửa bình luận này: mã không đúng hoặc bài viết không còn công khai.",
+  "Comment delete is not authorized":
+    "Không thể xóa bình luận này: mã không đúng hoặc bài viết không còn công khai.",
+  "Comment edit token is unavailable":
+    "Không tìm thấy mã sửa bình luận trên trình duyệt này. Có thể bạn đã xóa dữ liệu trình duyệt.",
 };
 
 function translateApiMessage(message: string): string {
@@ -132,12 +139,42 @@ function getGuestId(): string {
   return guestId;
 }
 
+function commentSecretKey(commentId: number): string {
+  return `lovelybar_comment_secret_${commentId}`;
+}
+
+function createCommentSecret(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function hashCommentSecret(secret: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(secret),
+  );
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
+function getCommentSecret(commentId: number): string {
+  const secret = localStorage.getItem(commentSecretKey(commentId));
+  if (!secret) {
+    throw new ApiError("Comment edit token is unavailable");
+  }
+  return secret;
+}
+
 function toPostComment(row: any): PostComment {
+  const id = Number(row.id);
   return {
-    id: Number(row.id),
+    id,
     author: row.author ?? "Khách",
     content: row.content,
     createdAt: row.createdAt ?? row.created_at,
+    editedAt: row.editedAt ?? row.edited_at ?? null,
+    canEdit: Boolean(localStorage.getItem(commentSecretKey(id))),
   };
 }
 
@@ -237,12 +274,61 @@ export const api = {
 
   addPostComment: (postId: number, content: string) =>
     request<PostComment>(async () => {
+      const secret = createCommentSecret();
+      const editTokenHash = await hashCommentSecret(secret);
       const { data, error } = await supabase.rpc("add_post_comment", {
         p_post_id: postId,
         p_guest_id: getGuestId(),
         p_content: content,
+        p_edit_token_hash: editTokenHash,
       });
-      return { data: data ? toPostComment(data) : null, error };
+      if (error || !data) return { data: null, error };
+      const comment = toPostComment(data);
+      try {
+        localStorage.setItem(commentSecretKey(comment.id), secret);
+      } catch (storageError) {
+        return {
+          data: null,
+          error: {
+            message:
+              `Bình luận đã được đăng nhưng không thể lưu quyền chỉnh sửa trên trình duyệt này: ${storageError instanceof Error ? storageError.message : String(storageError)}`,
+          },
+        };
+      }
+      return { data: { ...comment, canEdit: true }, error: null };
+    }),
+
+  editPostComment: (commentId: number, content: string) =>
+    request<PostComment>(async () => {
+      const secret = getCommentSecret(commentId);
+      const editTokenHash = await hashCommentSecret(secret);
+      const { data, error } = await supabase.rpc("edit_guest_post_comment", {
+        p_comment_id: commentId,
+        p_edit_token_hash: editTokenHash,
+        p_content: content,
+      });
+      return {
+        data: data ? { ...toPostComment(data), canEdit: true } : null,
+        error,
+      };
+    }),
+
+  deleteGuestPostComment: (commentId: number) =>
+    request<{ deleted: boolean }>(async () => {
+      const secret = getCommentSecret(commentId);
+      const editTokenHash = await hashCommentSecret(secret);
+      const { data, error } = await supabase.rpc("delete_guest_post_comment", {
+        p_comment_id: commentId,
+        p_edit_token_hash: editTokenHash,
+      });
+      if (!error && !data) {
+        return {
+          data: { deleted: false },
+          error: { message: "Comment delete is not authorized" },
+        };
+      }
+      if (!error && data) localStorage.removeItem(commentSecretKey(commentId));
+      return { data: { deleted: Boolean(data) }, error };
     }),
 
   setPostReaction: (postId: number, reaction: string | null) =>

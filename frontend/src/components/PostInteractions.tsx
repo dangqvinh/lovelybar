@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import ConfirmDialog from "./ConfirmDialog";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../services/api";
 import type { PostInteractions as PostInteractionsData } from "../types";
@@ -27,9 +28,14 @@ export default function PostInteractions({
     [postId],
   );
   const [comment, setComment] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingContent, setEditingContent] = useState("");
   const [busy, setBusy] = useState(false);
   const [reactionMenuOpen, setReactionMenuOpen] = useState(false);
   const [deletingCommentId, setDeletingCommentId] = useState<number | null>(
+    null,
+  );
+  const [commentToDeleteId, setCommentToDeleteId] = useState<number | null>(
     null,
   );
 
@@ -70,10 +76,46 @@ export default function PostInteractions({
     }
   }
 
+  async function submitEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (editingCommentId === null) return;
+    const content = editingContent.trim();
+    if (!content) {
+      toast.error("Bình luận không được để trống.");
+      return;
+    }
+    if (content.length > 1000) {
+      toast.error("Bình luận không được vượt quá 1.000 ký tự.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await api.editPostComment(editingCommentId, content);
+      setEditingCommentId(null);
+      setEditingContent("");
+      toast.success("Đã cập nhật bình luận");
+      await reload();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function deleteComment(commentId: number) {
     setDeletingCommentId(commentId);
     try {
-      await api.deletePostComment(commentId);
+      if (moderator) {
+        await api.deletePostComment(commentId);
+      } else {
+        await api.deleteGuestPostComment(commentId);
+      }
+      setCommentToDeleteId(null);
+      if (editingCommentId === commentId) {
+        setEditingCommentId(null);
+        setEditingContent("");
+      }
       toast.success("Đã xóa bình luận");
       await reload();
     } catch (e) {
@@ -195,22 +237,81 @@ export default function PostInteractions({
                     className="text-[11px] text-ink-soft"
                   >
                     {formatDate(item.createdAt)}
+                    {item.editedAt && " · đã chỉnh sửa"}
                   </time>
                 </div>
-                <p className="mt-1 whitespace-pre-line break-words text-sm">
-                  {item.content}
-                </p>
+                {editingCommentId === item.id ? (
+                  <form onSubmit={submitEdit} className="mt-2 space-y-2">
+                    <label className="sr-only" htmlFor={`edit-comment-${item.id}`}>
+                      Chỉnh sửa bình luận
+                    </label>
+                    <textarea
+                      id={`edit-comment-${item.id}`}
+                      value={editingContent}
+                      onChange={(event) => setEditingContent(event.target.value)}
+                      maxLength={1000}
+                      rows={2}
+                      className="input !rounded-xl"
+                      disabled={busy}
+                      autoFocus
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        className="btn-outline !min-h-9 !px-3 !py-1"
+                        onClick={() => {
+                          setEditingCommentId(null);
+                          setEditingContent("");
+                        }}
+                        disabled={busy}
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="submit"
+                        className="btn-primary !min-h-9 !px-3 !py-1"
+                        disabled={busy || !editingContent.trim()}
+                      >
+                        {busy ? "Đang lưu..." : "Lưu"}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <p className="mt-1 whitespace-pre-line break-words text-sm">
+                    {item.content}
+                  </p>
+                )}
               </div>
-              {moderator && (
+              {moderator ? (
                 <button
                   type="button"
                   className="rounded-lg px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
-                  disabled={deletingCommentId === item.id}
-                  onClick={() => deleteComment(item.id)}
+                  disabled={deletingCommentId === item.id || editingCommentId === item.id}
+                  onClick={() => setCommentToDeleteId(item.id)}
                 >
-                  {deletingCommentId === item.id ? "Đang xóa..." : "Xóa"}
+                  Xóa
                 </button>
-              )}
+              ) : item.canEdit && editingCommentId !== item.id ? (
+                <div className="flex shrink-0 gap-1">
+                  <button
+                    type="button"
+                    className="rounded-lg px-2 py-1 text-xs font-semibold text-pink-700 hover:bg-pink-50"
+                    onClick={() => {
+                      setEditingCommentId(item.id);
+                      setEditingContent(item.content);
+                    }}
+                  >
+                    Sửa
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-lg px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+                    onClick={() => setCommentToDeleteId(item.id)}
+                  >
+                    Xóa
+                  </button>
+                </div>
+              ) : null}
             </article>
           ))
         )}
@@ -249,9 +350,27 @@ export default function PostInteractions({
       )}
       {!moderator && (
         <p className="mt-2 text-xs text-ink-soft">
-          Bình luận sẽ hiển thị công khai với tên “Khách”.
+          Bình luận hiển thị công khai với tên “Khách”. Quyền sửa/xóa được lưu
+          trên trình duyệt này.
         </p>
       )}
+      <ConfirmDialog
+        open={commentToDeleteId !== null}
+        title="Xóa bình luận này?"
+        confirmLabel="Xóa bình luận"
+        danger
+        busy={deletingCommentId !== null}
+        onConfirm={() => {
+          if (commentToDeleteId !== null) {
+            void deleteComment(commentToDeleteId);
+          }
+        }}
+        onCancel={() => setCommentToDeleteId(null)}
+      >
+        {moderator
+          ? "Bình luận sẽ bị xóa vĩnh viễn."
+          : "Bạn chỉ có thể xóa bình luận này từ trình duyệt đã đăng bình luận."}
+      </ConfirmDialog>
     </section>
   );
 }

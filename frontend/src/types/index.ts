@@ -39,6 +39,8 @@ export interface PostComment {
   author: string
   content: string
   createdAt: string
+  editedAt: string | null
+  canEdit: boolean
 }
 
 export interface PostInteractions {
