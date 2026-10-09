@@ -263,6 +263,9 @@ function toProductSalesReportRow(row: any): ProductSalesReportRow {
 }
 
 export const api = {
+  canEditPostComment: (commentId: number) =>
+    Boolean(localStorage.getItem(commentSecretKey(commentId))),
+
   postInteractions: (postId: number | string) =>
     request<PostInteractions>(async () => {
       const { data, error } = await supabase.rpc("get_post_interactions", {

@@ -97,8 +97,22 @@ export default function PostInteractions({
 
     setBusy(true);
     try {
-      await api.addPostComment(postId, content);
+      const createdComment = await api.addPostComment(postId, content);
       setComment("");
+      setData((current) => {
+        if (!current) return current;
+        const alreadyLoaded = current.comments.some(
+          (item) => item.id === createdComment.id,
+        );
+        return {
+          ...current,
+          comments: [
+            createdComment,
+            ...current.comments.filter((item) => item.id !== createdComment.id),
+          ].slice(0, 100),
+          commentCount: current.commentCount + (alreadyLoaded ? 0 : 1),
+        };
+      });
       await reload();
     } catch (e) {
       toast.error((e as Error).message);
@@ -322,7 +336,8 @@ export default function PostInteractions({
                 >
                   Xóa
                 </button>
-              ) : item.canEdit && editingCommentId !== item.id ? (
+              ) : (item.canEdit || api.canEditPostComment(item.id)) &&
+                editingCommentId !== item.id ? (
                 <div className="flex shrink-0 gap-1">
                   <button
                     type="button"
