@@ -36,11 +36,15 @@ export interface PostInput {
 
 export interface PostComment {
   id: number
+  parentId: number | null
   author: string
   content: string
   createdAt: string
   editedAt: string | null
   canEdit: boolean
+  images: string[]
+  reactionCounts: Record<string, number>
+  myReaction: string | null
 }
 
 export interface PostInteractions {

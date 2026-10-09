@@ -30,7 +30,7 @@ export default function AdminPostDetail() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-6xl">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <Link
           to="/admin/posts"
@@ -43,6 +43,7 @@ export default function AdminPostDetail() {
         </Link>
       </div>
 
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]">
       <article className="overflow-hidden rounded-2xl border border-line bg-white shadow-soft">
         <div className="flex items-center gap-3 px-5 py-4">
           <div
@@ -78,8 +79,11 @@ export default function AdminPostDetail() {
         </div>
 
         <PostImageGallery images={data.images} title={data.title} />
-        <PostInteractions postId={data.id} moderator />
       </article>
+      <aside className="overflow-hidden rounded-2xl border border-line bg-white shadow-soft lg:sticky lg:top-24">
+        <PostInteractions postId={data.id} moderator />
+      </aside>
+      </div>
     </div>
   );
 }

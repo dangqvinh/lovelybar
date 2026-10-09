@@ -30,13 +30,14 @@ export default function PostDetail() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-6xl">
       <Link
         to="/posts"
         className="mb-4 inline-flex text-sm font-semibold text-pink-600 hover:underline"
       >
         ← Bảng tin
       </Link>
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]">
       <article className="overflow-hidden rounded-2xl border border-line bg-white shadow-soft">
         <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
           <div
@@ -66,8 +67,11 @@ export default function PostDetail() {
         <div className="border-t border-line px-4 py-3 text-xs text-ink-soft sm:px-5">
           Bài đăng từ LovelyBar
         </div>
-        <PostInteractions postId={data.id} />
       </article>
+      <aside className="overflow-hidden rounded-2xl border border-line bg-white shadow-soft lg:sticky lg:top-24">
+        <PostInteractions postId={data.id} />
+      </aside>
+      </div>
     </div>
   );
 }

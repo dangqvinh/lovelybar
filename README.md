@@ -104,6 +104,9 @@ nhưng chỉ admin mới được tạo, sửa, ẩn/hiện hoặc xóa theo mig
 `supabase/migrations/011_post_image_limit.sql`, `supabase/migrations/012_post_interactions.sql` và
 `supabase/migrations/013_guest_comment_edit_tokens.sql` bổ sung mã sửa/xóa bình luận cho khách.
 `supabase/migrations/014_post_comment_realtime.sql` bật cập nhật bình luận trực tiếp.
+`supabase/migrations/015_remove_guest_comment_limits.sql` bỏ giới hạn số bình luận khách.
+`supabase/migrations/016_comment_images_and_replies.sql` cho phép bình luận/trả lời kèm tối đa 5 ảnh (2 MB/ảnh); admin có thể bình luận và trả lời với tên “Admin”.
+`supabase/migrations/017_comment_names_and_reactions.sql` thêm tên hiển thị theo phiên trình duyệt và reaction cho bình luận.
 Nếu dùng backend Go riêng, các route `/api/admin` hiện chưa có xác thực; cần bảo vệ chúng
 trước khi công khai backend ra internet.
 

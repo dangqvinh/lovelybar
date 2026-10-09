@@ -50,12 +50,15 @@ const API_ERROR_TRANSLATIONS: Record<string, string> = {
   "This order was cancelled": "Đơn hàng này đã bị hủy.",
   "Could not generate a QR code for this payment method":
     "Không thể tạo mã QR cho phương thức thanh toán này.",
-  "Please wait before commenting again":
-    "Bạn bình luận hơi nhanh, vui lòng đợi một chút rồi thử lại.",
-  "Guest comment limit reached":
-    "Bạn đã đạt giới hạn 20 bình luận trong 24 giờ từ trình duyệt này.",
   "Comment must be between 1 and 1000 characters":
     "Bình luận phải có từ 1 đến 1.000 ký tự.",
+  "Comment to reply to was not found":
+    "Không tìm thấy bình luận cần trả lời.",
+  "Comment name must be 1 to 40 characters and cannot be Admin":
+    "Tên phải có từ 1 đến 40 ký tự và không được dùng tên Admin.",
+  "Comment not found": "Không tìm thấy bình luận.",
+  "Invalid comment images":
+    "Ảnh đính kèm không hợp lệ. Mỗi bình luận tối đa 5 ảnh JPG, PNG hoặc WEBP, mỗi ảnh không quá 2 MB.",
   "Invalid reaction": "Cảm xúc không hợp lệ.",
   "Post not found": "Không tìm thấy bài đăng.",
   "Admin access required": "Bạn không có quyền thực hiện thao tác này.",
@@ -143,6 +146,8 @@ function commentSecretKey(commentId: number): string {
   return `lovelybar_comment_secret_${commentId}`;
 }
 
+const COMMENT_AUTHOR_SESSION_KEY = "lovelybar_comment_author";
+
 function createCommentSecret(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -168,13 +173,23 @@ function getCommentSecret(commentId: number): string {
 
 function toPostComment(row: any): PostComment {
   const id = Number(row.id);
+  const imagePaths: string[] = Array.isArray(row.images) ? row.images : [];
+  const parentId = row.parentId ?? row.parent_id;
   return {
     id,
+    parentId: parentId == null ? null : Number(parentId),
     author: row.author ?? "Khách",
     content: row.content,
     createdAt: row.createdAt ?? row.created_at,
     editedAt: row.editedAt ?? row.edited_at ?? null,
     canEdit: Boolean(localStorage.getItem(commentSecretKey(id))),
+    images: imagePaths.map((path) =>
+      path.startsWith("http")
+        ? path
+        : supabase.storage.from("post-comment-images").getPublicUrl(path).data.publicUrl,
+    ),
+    reactionCounts: row.reactionCounts ?? row.reaction_counts ?? {},
+    myReaction: row.myReaction ?? row.my_reaction ?? null,
   };
 }
 
@@ -263,8 +278,50 @@ function toProductSalesReportRow(row: any): ProductSalesReportRow {
 }
 
 export const api = {
+  getCommentAuthor: () => sessionStorage.getItem(COMMENT_AUTHOR_SESSION_KEY) ?? "",
+
+  saveCommentAuthor: (author: string) =>
+    sessionStorage.setItem(COMMENT_AUTHOR_SESSION_KEY, author),
+
   canEditPostComment: (commentId: number) =>
     Boolean(localStorage.getItem(commentSecretKey(commentId))),
+
+  uploadPostCommentImages: (files: File[], postId: number) =>
+    request<string[]>(async () => {
+      const extensions: Record<string, string> = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+      };
+      if (files.length > 5) {
+        return {
+          data: null,
+          error: { message: "Mỗi bình luận chỉ được đính kèm tối đa 5 ảnh." },
+        };
+      }
+      const invalidFile = files.find(
+        (file) => !extensions[file.type] || file.size > 2 * 1024 * 1024,
+      );
+      if (invalidFile) {
+        return {
+          data: null,
+          error: {
+            message: "Ảnh phải là JPG, PNG hoặc WEBP và có dung lượng tối đa 2 MB.",
+          },
+        };
+      }
+
+      const paths: string[] = [];
+      for (const file of files) {
+        const path = `posts/${postId}/${crypto.randomUUID()}.${extensions[file.type]}`;
+        const { error } = await supabase.storage
+          .from("post-comment-images")
+          .upload(path, file, { cacheControl: "3600", upsert: false });
+        if (error) return { data: null, error };
+        paths.push(path);
+      }
+      return { data: paths, error: null };
+    }),
 
   postInteractions: (postId: number | string) =>
     request<PostInteractions>(async () => {
@@ -275,8 +332,15 @@ export const api = {
       return { data: data ? toPostInteractions(data) : null, error };
     }),
 
-  addPostComment: (postId: number, content: string) =>
+  addPostComment: (
+    postId: number,
+    content: string,
+    parentId: number | null,
+    files: File[],
+    author: string,
+  ) =>
     request<PostComment>(async () => {
+      const imagePaths = await api.uploadPostCommentImages(files, postId);
       const secret = createCommentSecret();
       const editTokenHash = await hashCommentSecret(secret);
       const { data, error } = await supabase.rpc("add_post_comment", {
@@ -284,6 +348,9 @@ export const api = {
         p_guest_id: getGuestId(),
         p_content: content,
         p_edit_token_hash: editTokenHash,
+        p_parent_id: parentId,
+        p_images: imagePaths,
+        p_author: author,
       });
       if (error || !data) return { data: null, error };
       const comment = toPostComment(data);
@@ -299,6 +366,23 @@ export const api = {
         };
       }
       return { data: { ...comment, canEdit: true }, error: null };
+    }),
+
+  addAdminPostComment: (
+    postId: number,
+    content: string,
+    parentId: number | null,
+    files: File[],
+  ) =>
+    request<PostComment>(async () => {
+      const imagePaths = await api.uploadPostCommentImages(files, postId);
+      const { data, error } = await supabase.rpc("admin_add_post_comment", {
+        p_post_id: postId,
+        p_content: content,
+        p_parent_id: parentId,
+        p_images: imagePaths,
+      });
+      return { data: data ? toPostComment(data) : null, error };
     }),
 
   editPostComment: (commentId: number, content: string) =>
@@ -338,6 +422,16 @@ export const api = {
     request<PostInteractions>(async () => {
       const { data, error } = await supabase.rpc("set_post_reaction", {
         p_post_id: postId,
+        p_guest_id: getGuestId(),
+        p_reaction: reaction,
+      });
+      return { data: data ? toPostInteractions(data) : null, error };
+    }),
+
+  setPostCommentReaction: (commentId: number, reaction: string | null) =>
+    request<PostInteractions>(async () => {
+      const { data, error } = await supabase.rpc("set_post_comment_reaction", {
+        p_comment_id: commentId,
         p_guest_id: getGuestId(),
         p_reaction: reaction,
       });
