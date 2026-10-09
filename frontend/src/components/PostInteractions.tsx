@@ -128,30 +128,34 @@ export default function PostInteractions({
           </button>
           {!moderator && (
             <div
-              className={`absolute bottom-full left-0 z-10 mb-2 flex origin-bottom-left items-center gap-1 rounded-full border border-line bg-white p-1.5 shadow-lift transition duration-150 ${
-                reactionMenuOpen
-                  ? "visible scale-100 opacity-100"
-                  : "invisible scale-95 opacity-0 group-hover:visible group-hover:scale-100 group-hover:opacity-100 group-focus-within:visible group-focus-within:scale-100 group-focus-within:opacity-100"
-              }`}
-              role="group"
-              aria-label="Chọn reaction"
+              className="absolute bottom-full left-0 z-10 pb-2"
             >
-              {REACTIONS.map(({ value, emoji, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  title={`${label} (${data?.reactionCounts[value] ?? 0})`}
-                  aria-label={`${label}, ${data?.reactionCounts[value] ?? 0}`}
-                  aria-pressed={data?.myReaction === value}
-                  disabled={busy || loading || Boolean(error)}
-                  onClick={() => react(value)}
-                  className={`grid h-10 w-10 place-items-center rounded-full text-2xl transition hover:-translate-y-1 hover:scale-125 ${
-                    data?.myReaction === value ? "bg-pink-100" : "hover:bg-pink-50"
-                  }`}
-                >
-                  {emoji}
-                </button>
-              ))}
+              <div
+                className={`flex origin-bottom-left items-center gap-1 rounded-full border border-line bg-white p-1.5 shadow-lift transition duration-150 ${
+                  reactionMenuOpen
+                    ? "visible scale-100 opacity-100"
+                    : "invisible scale-95 opacity-0 group-hover:visible group-hover:scale-100 group-hover:opacity-100 group-focus-within:visible group-focus-within:scale-100 group-focus-within:opacity-100"
+                }`}
+                role="group"
+                aria-label="Chọn reaction"
+              >
+                {REACTIONS.map(({ value, emoji, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    title={`${label} (${data?.reactionCounts[value] ?? 0})`}
+                    aria-label={`${label}, ${data?.reactionCounts[value] ?? 0}`}
+                    aria-pressed={data?.myReaction === value}
+                    disabled={busy || loading || Boolean(error)}
+                    onClick={() => react(value)}
+                    className={`grid h-10 w-10 place-items-center rounded-full text-2xl transition hover:-translate-y-1 hover:scale-125 ${
+                      data?.myReaction === value ? "bg-pink-100" : "hover:bg-pink-50"
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
