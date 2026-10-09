@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import ConfirmDialog from "./ConfirmDialog";
+import PostImageGallery from "./PostImageGallery";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../services/api";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
@@ -356,41 +357,11 @@ export default function PostInteractions({
               </p>
             )}
             {item.images.length > 0 && (
-              <div
-                className={`mt-2 grid max-w-lg overflow-hidden rounded-xl ${
-                  item.images.length === 1
-                    ? "aspect-[4/3] grid-cols-1"
-                    : item.images.length === 2
-                      ? "aspect-[4/3] grid-cols-2 gap-1"
-                      : item.images.length === 3
-                        ? "aspect-square grid-cols-[2fr_1fr] grid-rows-2 gap-1"
-                        : "aspect-square grid-cols-2 grid-rows-2 gap-1"
-                }`}
-              >
-                {item.images.slice(0, 4).map((image, index) => (
-                  <a
-                    key={`${item.id}-${image}`}
-                    href={image}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={`Mở ảnh ${index + 1} của bình luận`}
-                    className={`relative min-h-0 overflow-hidden bg-pink-100 ${
-                      item.images.length === 3 && index === 0 ? "row-span-2" : ""
-                    }`}
-                  >
-                    <img
-                      src={image}
-                      alt={`Ảnh ${index + 1} đính kèm`}
-                      loading="lazy"
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                    {index === 3 && item.images.length > 4 && (
-                      <span className="absolute inset-0 grid place-items-center bg-black/55 text-2xl font-bold text-white">
-                        +{item.images.length - 4}
-                      </span>
-                    )}
-                  </a>
-                ))}
+              <div className="mt-2 max-w-lg">
+                <PostImageGallery
+                  images={item.images}
+                  title={`Bình luận của ${item.author}`}
+                />
               </div>
             )}
             <div className="mt-2 flex flex-wrap items-center gap-2">
