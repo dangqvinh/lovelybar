@@ -22,12 +22,12 @@ export default function Posts() {
           text="Thông tin mới sẽ được cập nhật tại đây."
         />
       ) : (
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-          <div className="mx-auto w-full max-w-2xl space-y-5">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <div className="mx-auto w-full min-w-0 max-w-2xl space-y-5">
             {data.map((post) => (
               <article
                 key={post.id}
-                className="overflow-hidden rounded-2xl border border-line bg-white shadow-soft"
+                className="w-full min-w-0 overflow-hidden rounded-2xl border border-line bg-white shadow-soft"
               >
                 <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
                   <div
@@ -60,12 +60,12 @@ export default function Posts() {
                   </div>
                 </div>
 
-                <div className="px-4 pb-4 sm:px-5">
+                <div className="min-w-0 px-4 pb-4 sm:px-5">
                   <h2 className="text-lg font-bold leading-snug">
                     {post.title}
                   </h2>
                   {post.content && (
-                    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-ink-soft line-clamp-4">
+                    <p className="mt-2 min-w-0 whitespace-pre-line break-words text-sm leading-6 text-ink-soft line-clamp-4">
                       {post.content}
                     </p>
                   )}

@@ -514,7 +514,7 @@ export default function PostInteractions({
   }
 
   return (
-    <section className="border-t border-line px-4 py-4 sm:px-5">
+    <section className="w-full min-w-0 border-t border-line px-4 py-4 sm:px-5">
       <div className="flex flex-wrap items-center gap-2">
         <div className="group relative flex items-center">
           <button
