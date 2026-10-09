@@ -42,6 +42,25 @@
   }
   .btn-primary {
     @apply btn bg-pink-500 text-white shadow-soft hover:bg-pink-600;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+  .btn-primary::after {
+    position: absolute;
+    inset: -50% auto -50% -45%;
+    z-index: -1;
+    width: 30%;
+    pointer-events: none;
+    content: "";
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.28),
+      transparent
+    );
+    transform: skewX(-20deg);
+    animation: button-shimmer 5s ease-in-out infinite;
   }
   .btn-soft {
     @apply btn bg-pink-100 text-pink-700 hover:bg-pink-200;
@@ -54,6 +73,10 @@
   }
   .card {
     @apply rounded-3xl border border-line bg-white shadow-soft;
+    transition: box-shadow 180ms ease, transform 180ms ease;
+  }
+  .card:hover {
+    box-shadow: 0 12px 32px -16px rgba(209, 36, 96, 0.25);
   }
 
   main {
@@ -65,6 +88,64 @@
   .label {
     @apply mb-1.5 block text-sm font-medium;
   }
+}
+
+@keyframes button-shimmer {
+  0%,
+  70%,
+  100% {
+    left: -45%;
+  }
+  35% {
+    left: 120%;
+  }
+}
+
+.shop-nav-icon {
+  display: none;
+}
+
+@keyframes logo-glimmer {
+  0%,
+  100% {
+    box-shadow: 0 2px 16px -4px rgba(209, 36, 96, 0.12);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(249, 100, 143, 0.55);
+  }
+}
+
+@keyframes sparkle-twinkle {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.8) rotate(-12deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15) rotate(12deg);
+  }
+}
+
+.hero-sparkle {
+  position: absolute;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+  animation: sparkle-twinkle 2.6s ease-in-out infinite;
+}
+
+.hero-sparkle-one {
+  top: 18%;
+  right: 12%;
+  font-size: 1.75rem;
+}
+
+.hero-sparkle-two {
+  right: 27%;
+  bottom: 16%;
+  font-size: 1.2rem;
+  animation-delay: 0.8s;
 }
 
 @media (max-width: 767px) {
@@ -95,63 +176,89 @@
 }
 
 @media (max-width: 480px) {
-  .shop-nav {
-    min-width: 0;
-    max-width: 65vw;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .shop-nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .shop-nav > a {
-    padding-right: 0.5rem;
-    padding-left: 0.5rem;
-  }
-
-  .shop-nav > a:last-child {
-    padding-right: 0.5rem !important;
-    padding-left: 0.5rem !important;
+  .shop-header-inner > a:first-child > span:first-child {
+    animation: logo-glimmer 3.5s ease-in-out infinite;
   }
 }
 
-@media (max-width: 420px) {
-  .shop-header-inner {
-    gap: 0.5rem;
-    padding-right: 0.75rem;
-    padding-left: 0.75rem;
-  }
-
-  .shop-header-inner > a:first-child {
-    gap: 0.375rem;
-  }
-
-  .shop-header-inner > a:first-child > span:first-child {
-    width: 2rem;
-    height: 2rem;
-  }
-
-  .shop-header-inner > a:first-child > span:last-child {
-    font-size: 1.125rem;
+@media (max-width: 639px) {
+  .shop-header {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 
   .shop-nav {
-    gap: 0;
+    position: fixed;
+    z-index: 40;
+    left: 50%;
+    bottom: max(0.65rem, env(safe-area-inset-bottom));
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 0.2rem;
+    width: calc(100% - 1.5rem);
+    max-width: 28rem;
+    min-width: 0;
+    margin-inline: auto;
+    transform: translateX(-50%);
+    padding: 0.4rem;
+    border: 1px solid rgba(243, 221, 227, 0.95);
+    border-radius: 1.25rem;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 8px 30px -12px rgba(128, 44, 76, 0.3);
+    backdrop-filter: blur(16px);
   }
 
   .shop-nav > a {
-    padding-right: 0.5rem;
-    padding-left: 0.5rem;
+    position: relative;
+    display: flex;
+    min-width: 0;
+    min-height: 3.2rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    margin: 0;
+    padding: 0.3rem 0.1rem !important;
+    border-radius: 0.9rem;
+    color: #7a6670;
+    font-size: 0.64rem;
+    line-height: 1;
+    text-align: center;
   }
 
-  .shop-nav > a:first-child {
-    display: none;
+  .shop-nav > a[aria-current="page"] {
+    background: #fff1f4;
+    color: #ae1850;
   }
 
-  .shop-nav > a:last-child {
-    margin-left: 0;
+  .shop-nav > a[aria-current="page"]::after {
+    position: absolute;
+    top: 0.2rem;
+    right: 0.45rem;
+    color: #ec3f72;
+    content: "✦";
+    font-size: 0.55rem;
+    animation: sparkle-twinkle 1.8s ease-in-out infinite;
+  }
+
+  .shop-nav-icon {
+    display: block;
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+
+  .shop-nav-cart-label {
+    display: block;
+  }
+
+  .shop-nav-count {
+    top: 0;
+    right: 0.35rem;
+  }
+
+  main {
+    padding-bottom: 6rem !important;
   }
 }
 

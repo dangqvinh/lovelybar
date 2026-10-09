@@ -31,6 +31,18 @@ export default function Home() {
           className="pointer-events-none absolute -bottom-24 right-40 h-56 w-56 rounded-full bg-pink-600/40"
           aria-hidden
         />
+        <span
+          className="hero-sparkle hero-sparkle-one"
+          aria-hidden
+        >
+          ✦
+        </span>
+        <span
+          className="hero-sparkle hero-sparkle-two"
+          aria-hidden
+        >
+          ✧
+        </span>
         <div className="relative grid items-center gap-10 md:grid-cols-2">
           <div>
             <h1 className="text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
