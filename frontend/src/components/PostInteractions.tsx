@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import ConfirmDialog from "./ConfirmDialog";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../services/api";
+import { isSupabaseConfigured, supabase } from "../lib/supabase";
 import type { PostInteractions as PostInteractionsData } from "../types";
 import { formatDate } from "../utils/format";
 import { Spinner } from "./States";
@@ -38,6 +39,36 @@ export default function PostInteractions({
   const [commentToDeleteId, setCommentToDeleteId] = useState<number | null>(
     null,
   );
+  const [realtimeAttempt, setRealtimeAttempt] = useState(0);
+  const [realtimeError, setRealtimeError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    let active = true;
+    const channel = supabase
+      .channel(`post-comments:${postId}`, { config: { private: false } })
+      .on("broadcast", { event: "comment_changed" }, () => {
+        reload();
+      })
+      .subscribe((status, error) => {
+        if (!active) return;
+        if (status === "SUBSCRIBED") {
+          setRealtimeError(null);
+        } else if (
+          status === "CHANNEL_ERROR" ||
+          status === "TIMED_OUT" ||
+          status === "CLOSED"
+        ) {
+          setRealtimeError(error?.message ?? status);
+        }
+      });
+
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+    };
+  }, [postId, realtimeAttempt, reload]);
 
   async function react(reaction: string) {
     setBusy(true);
@@ -207,7 +238,7 @@ export default function PostInteractions({
       </div>
 
       <div className="mt-4 space-y-3">
-        {loading ? (
+        {loading && !data ? (
           <Spinner label="Đang tải bình luận" />
         ) : error ? (
           <div className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
@@ -352,6 +383,22 @@ export default function PostInteractions({
         <p className="mt-2 text-xs text-ink-soft">
           Bình luận hiển thị công khai với tên “Khách”. Quyền sửa/xóa được lưu
           trên trình duyệt này.
+        </p>
+      )}
+      {realtimeError && (
+        <p className="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-red-700" role="status">
+          Cập nhật bình luận trực tiếp bị gián đoạn ({realtimeError}).
+          <button
+            type="button"
+            className="font-semibold underline"
+            onClick={() => {
+              setRealtimeError(null);
+              setRealtimeAttempt((attempt) => attempt + 1);
+              reload();
+            }}
+          >
+            Kết nối lại
+          </button>
         </p>
       )}
       <ConfirmDialog

@@ -103,6 +103,7 @@ nhưng chỉ admin mới được tạo, sửa, ẩn/hiện hoặc xóa theo mig
 `supabase/migrations/009_post_image.sql`, `supabase/migrations/010_post_images.sql` và
 `supabase/migrations/011_post_image_limit.sql`, `supabase/migrations/012_post_interactions.sql` và
 `supabase/migrations/013_guest_comment_edit_tokens.sql` bổ sung mã sửa/xóa bình luận cho khách.
+`supabase/migrations/014_post_comment_realtime.sql` bật cập nhật bình luận trực tiếp.
 Nếu dùng backend Go riêng, các route `/api/admin` hiện chưa có xác thực; cần bảo vệ chúng
 trước khi công khai backend ra internet.
 
