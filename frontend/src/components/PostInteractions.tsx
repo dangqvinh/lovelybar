@@ -29,6 +29,9 @@ export default function PostInteractions({
     [postId],
   );
   const [comment, setComment] = useState("");
+  const [ownedCommentIds, setOwnedCommentIds] = useState<Set<number>>(
+    () => new Set(),
+  );
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState("");
   const [busy, setBusy] = useState(false);
@@ -99,6 +102,7 @@ export default function PostInteractions({
     try {
       const createdComment = await api.addPostComment(postId, content);
       setComment("");
+      setOwnedCommentIds((current) => new Set(current).add(createdComment.id));
       setData((current) => {
         if (!current) return current;
         const alreadyLoaded = current.comments.some(
@@ -113,7 +117,6 @@ export default function PostInteractions({
           commentCount: current.commentCount + (alreadyLoaded ? 0 : 1),
         };
       });
-      await reload();
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -156,6 +159,11 @@ export default function PostInteractions({
       } else {
         await api.deleteGuestPostComment(commentId);
       }
+      setOwnedCommentIds((current) => {
+        const next = new Set(current);
+        next.delete(commentId);
+        return next;
+      });
       setCommentToDeleteId(null);
       if (editingCommentId === commentId) {
         setEditingCommentId(null);
@@ -336,7 +344,9 @@ export default function PostInteractions({
                 >
                   Xóa
                 </button>
-              ) : (item.canEdit || api.canEditPostComment(item.id)) &&
+              ) : (ownedCommentIds.has(item.id) ||
+                  item.canEdit ||
+                  api.canEditPostComment(item.id)) &&
                 editingCommentId !== item.id ? (
                 <div className="flex shrink-0 gap-1">
                   <button
