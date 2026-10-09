@@ -28,6 +28,7 @@ export default function PostInteractions({
   );
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
+  const [reactionMenuOpen, setReactionMenuOpen] = useState(false);
   const [deletingCommentId, setDeletingCommentId] = useState<number | null>(
     null,
   );
@@ -40,6 +41,7 @@ export default function PostInteractions({
         data?.myReaction === reaction ? null : reaction,
       );
       setData(updated);
+      setReactionMenuOpen(false);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -88,25 +90,71 @@ export default function PostInteractions({
   return (
     <section className="border-t border-line px-4 py-4 sm:px-5">
       <div className="flex flex-wrap items-center gap-2">
-        {REACTIONS.map(({ value, emoji, label }) => (
+        <div className="group relative flex items-center">
           <button
-            key={value}
             type="button"
-            title={label}
-            aria-label={`${label}, ${data?.reactionCounts[value] ?? 0}`}
-            aria-pressed={data?.myReaction === value}
+            title={data?.myReaction ? "Gỡ reaction" : "Thích"}
+            aria-label={
+              data?.myReaction
+                ? `Bỏ ${REACTIONS.find((item) => item.value === data.myReaction)?.label ?? "reaction"}`
+                : "Thích bài viết"
+            }
+            aria-pressed={Boolean(data?.myReaction)}
             disabled={moderator || busy || loading || Boolean(error)}
-            onClick={() => react(value)}
-            className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3 text-sm transition ${
-              data?.myReaction === value
+            onClick={() =>
+              react(data?.myReaction ?? "LIKE")
+            }
+            className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition ${
+              data?.myReaction
                 ? "border-pink-300 bg-pink-100 text-pink-700"
                 : "border-line bg-white text-ink-soft hover:border-pink-200 hover:bg-pink-50"
             }`}
           >
-            <span aria-hidden>{emoji}</span>
-            <span>{data?.reactionCounts[value] ?? 0}</span>
+            <span aria-hidden>
+              {REACTIONS.find((item) => item.value === data?.myReaction)?.emoji ?? "👍"}
+            </span>
+            <span>
+              {REACTIONS.find((item) => item.value === data?.myReaction)?.label ?? "Thích"}
+            </span>
           </button>
-        ))}
+          <button
+            type="button"
+            className="ml-1 grid h-9 w-8 place-items-center rounded-full text-xs text-ink-soft hover:bg-pink-50 sm:hidden"
+            aria-label="Chọn cảm xúc"
+            aria-expanded={reactionMenuOpen}
+            onClick={() => setReactionMenuOpen((open) => !open)}
+          >
+            ▴
+          </button>
+          {!moderator && (
+            <div
+              className={`absolute bottom-full left-0 z-10 mb-2 flex origin-bottom-left items-center gap-1 rounded-full border border-line bg-white p-1.5 shadow-lift transition duration-150 ${
+                reactionMenuOpen
+                  ? "visible scale-100 opacity-100"
+                  : "invisible scale-95 opacity-0 group-hover:visible group-hover:scale-100 group-hover:opacity-100 group-focus-within:visible group-focus-within:scale-100 group-focus-within:opacity-100"
+              }`}
+              role="group"
+              aria-label="Chọn reaction"
+            >
+              {REACTIONS.map(({ value, emoji, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  title={`${label} (${data?.reactionCounts[value] ?? 0})`}
+                  aria-label={`${label}, ${data?.reactionCounts[value] ?? 0}`}
+                  aria-pressed={data?.myReaction === value}
+                  disabled={busy || loading || Boolean(error)}
+                  onClick={() => react(value)}
+                  className={`grid h-10 w-10 place-items-center rounded-full text-2xl transition hover:-translate-y-1 hover:scale-125 ${
+                    data?.myReaction === value ? "bg-pink-100" : "hover:bg-pink-50"
+                  }`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <span className="ml-auto text-xs text-ink-soft">
           {totalReactions} lượt reaction · {data?.commentCount ?? 0} bình luận
         </span>
