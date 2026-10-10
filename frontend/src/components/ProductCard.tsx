@@ -8,7 +8,7 @@ import ProductImage from "./ProductImage";
 export default function ProductCard({ product }: { product: Product }) {
   const add = useCart((s) => s.add);
   return (
-    <article className="card group flex flex-col overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-lift">
+    <article className="card group flex h-full flex-col overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-lift">
       <Link
         to={`/products/${product.id}`}
         className="block overflow-hidden"
@@ -21,7 +21,9 @@ export default function ProductCard({ product }: { product: Product }) {
         />
       </Link>
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="font-bold leading-snug">{product.name}</h3>
+        <h3 className="min-h-[2.75rem] line-clamp-2 font-bold leading-snug">
+          {product.name}
+        </h3>
         <p className="mt-1 line-clamp-2 min-h-[2.5rem] text-sm text-ink-soft">
           {product.description}
         </p>
