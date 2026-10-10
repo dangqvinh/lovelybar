@@ -48,6 +48,8 @@ export default function PostInteractions({
   );
   const reactionPressTimer = useRef<number | null>(null);
   const longPressTriggered = useRef(false);
+  const postReactionRef = useRef<HTMLDivElement>(null);
+  const commentReactionRefs = useRef(new Map<number, HTMLDivElement>());
   const [deletingCommentId, setDeletingCommentId] = useState<number | null>(
     null,
   );
@@ -73,6 +75,27 @@ export default function PostInteractions({
     () => () => replyPreviews.forEach(({ url }) => URL.revokeObjectURL(url)),
     [replyPreviews],
   );
+
+  useEffect(() => {
+    if (!reactionMenuOpen && commentReactionMenuId === null) return;
+
+    function dismissReactionMenus(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (reactionMenuOpen && !postReactionRef.current?.contains(target)) {
+        setReactionMenuOpen(false);
+      }
+      if (
+        commentReactionMenuId !== null &&
+        !commentReactionRefs.current.get(commentReactionMenuId)?.contains(target)
+      ) {
+        setCommentReactionMenuId(null);
+      }
+    }
+
+    document.addEventListener("pointerdown", dismissReactionMenus);
+    return () => document.removeEventListener("pointerdown", dismissReactionMenus);
+  }, [reactionMenuOpen, commentReactionMenuId]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -385,7 +408,13 @@ export default function PostInteractions({
               </div>
             )}
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <div className="group/comment-reaction inline-flex flex-col items-start">
+              <div
+                ref={(element) => {
+                  if (element) commentReactionRefs.current.set(item.id, element);
+                  else commentReactionRefs.current.delete(item.id);
+                }}
+                className="group/comment-reaction inline-flex flex-col items-start"
+              >
                 <button
                   type="button"
                   title={item.myReaction ? "Gỡ reaction" : "Thích"}
@@ -598,7 +627,7 @@ export default function PostInteractions({
   return (
     <section className="w-full min-w-0 border-t border-line px-4 py-4 sm:px-5">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="group flex flex-col items-start">
+        <div ref={postReactionRef} className="group flex flex-col items-start">
           <button
             type="button"
             title={data?.myReaction ? "Gỡ reaction" : "Thích"}
