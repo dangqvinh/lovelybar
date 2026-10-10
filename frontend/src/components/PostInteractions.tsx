@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import ConfirmDialog from "./ConfirmDialog";
 import PostImageGallery from "./PostImageGallery";
@@ -46,6 +46,8 @@ export default function PostInteractions({
   const [commentReactionMenuId, setCommentReactionMenuId] = useState<number | null>(
     null,
   );
+  const reactionPressTimer = useRef<number | null>(null);
+  const longPressTriggered = useRef(false);
   const [deletingCommentId, setDeletingCommentId] = useState<number | null>(
     null,
   );
@@ -113,6 +115,24 @@ export default function PostInteractions({
       toast.error((e as Error).message);
     } finally {
       setBusy(false);
+    }
+  }
+
+  function startReactionHold(onHold: () => void) {
+    if (reactionPressTimer.current !== null) {
+      window.clearTimeout(reactionPressTimer.current);
+    }
+    longPressTriggered.current = false;
+    reactionPressTimer.current = window.setTimeout(() => {
+      longPressTriggered.current = true;
+      onHold();
+    }, 500);
+  }
+
+  function endReactionHold() {
+    if (reactionPressTimer.current !== null) {
+      window.clearTimeout(reactionPressTimer.current);
+      reactionPressTimer.current = null;
     }
   }
 
@@ -365,7 +385,7 @@ export default function PostInteractions({
               </div>
             )}
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <div className="group/comment-reaction relative inline-flex items-center">
+              <div className="group/comment-reaction inline-flex flex-col items-start">
                 <button
                   type="button"
                   title={item.myReaction ? "Gỡ reaction" : "Thích"}
@@ -376,9 +396,20 @@ export default function PostInteractions({
                   }
                   aria-pressed={Boolean(item.myReaction)}
                   disabled={busy}
-                  onClick={() =>
-                    void reactToComment(item.id, item.myReaction ?? "LIKE")
+                  onPointerDown={() =>
+                    startReactionHold(() => setCommentReactionMenuId(item.id))
                   }
+                  onPointerUp={endReactionHold}
+                  onPointerCancel={endReactionHold}
+                  onPointerLeave={endReactionHold}
+                  onContextMenu={(event) => event.preventDefault()}
+                  onClick={() => {
+                    if (longPressTriggered.current) {
+                      longPressTriggered.current = false;
+                      return;
+                    }
+                    void reactToComment(item.id, item.myReaction ?? "LIKE");
+                  }}
                   className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition ${
                     item.myReaction
                       ? "border-pink-300 bg-pink-100 text-pink-700"
@@ -392,45 +423,43 @@ export default function PostInteractions({
                     {REACTIONS.find((reaction) => reaction.value === item.myReaction)?.label ?? "Thích"}
                   </span>
                 </button>
-                <button
-                  type="button"
-                  className="ml-1 grid h-8 w-7 place-items-center rounded-full text-xs text-ink-soft hover:bg-white sm:hidden"
-                  aria-label="Chọn cảm xúc cho bình luận"
-                  aria-expanded={commentReactionMenuId === item.id}
-                  onClick={() =>
-                    setCommentReactionMenuId((current) =>
-                      current === item.id ? null : item.id,
-                    )
-                  }
+                <div
+                  className={`grid w-full grid-rows-[0fr] transition-[grid-template-rows] duration-150 [@media(hover:hover)]:group-hover/comment-reaction:grid-rows-[1fr] [@media(hover:hover)]:group-focus-within/comment-reaction:grid-rows-[1fr] ${
+                    commentReactionMenuId === item.id ? "grid-rows-[1fr]" : ""
+                  }`}
                 >
-                  ▴
-                </button>
-                <div className="absolute bottom-full left-0 z-20 pb-2">
                   <div
-                    className={`flex origin-bottom-left items-center gap-1 rounded-full border border-line bg-white p-1.5 shadow-lift transition duration-150 ${
+                    className={`min-h-0 overflow-hidden ${
                       commentReactionMenuId === item.id
-                        ? "visible scale-100 opacity-100"
-                        : "invisible scale-95 opacity-0 group-hover/comment-reaction:visible group-hover/comment-reaction:scale-100 group-hover/comment-reaction:opacity-100 group-focus-within/comment-reaction:visible group-focus-within/comment-reaction:scale-100 group-focus-within/comment-reaction:opacity-100"
+                        ? "visible opacity-100"
+                        : "invisible opacity-0 [@media(hover:hover)]:group-hover/comment-reaction:visible [@media(hover:hover)]:group-hover/comment-reaction:opacity-100 [@media(hover:hover)]:group-focus-within/comment-reaction:visible [@media(hover:hover)]:group-focus-within/comment-reaction:opacity-100"
                     }`}
-                    role="group"
-                    aria-label="Chọn reaction cho bình luận"
                   >
-                    {REACTIONS.map(({ value, emoji, label }) => (
-                      <button
-                        key={value}
-                        type="button"
-                        title={`${label} (${item.reactionCounts[value] ?? 0})`}
-                        aria-label={`${label}, ${item.reactionCounts[value] ?? 0}`}
-                        aria-pressed={item.myReaction === value}
-                        disabled={busy}
-                        onClick={() => void reactToComment(item.id, value)}
-                        className={`grid h-9 w-9 place-items-center rounded-full text-xl transition hover:-translate-y-1 hover:scale-125 ${
-                          item.myReaction === value ? "bg-pink-100" : "hover:bg-pink-50"
-                        }`}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
+                    <div
+                      className="mt-2 flex items-center gap-1 rounded-full border border-line bg-white p-1.5 shadow-lift"
+                      role="group"
+                      aria-label="Chọn reaction cho bình luận"
+                    >
+                      {REACTIONS.map(({ value, emoji, label }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          title={`${label} (${item.reactionCounts[value] ?? 0})`}
+                          aria-label={`${label}, ${item.reactionCounts[value] ?? 0}`}
+                          aria-pressed={item.myReaction === value}
+                          disabled={busy}
+                          onClick={() => {
+                            longPressTriggered.current = false;
+                            void reactToComment(item.id, value);
+                          }}
+                          className={`grid h-9 w-9 place-items-center rounded-full text-xl transition hover:-translate-y-1 hover:scale-125 ${
+                            item.myReaction === value ? "bg-pink-100" : "hover:bg-pink-50"
+                          }`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -569,7 +598,7 @@ export default function PostInteractions({
   return (
     <section className="w-full min-w-0 border-t border-line px-4 py-4 sm:px-5">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="group relative flex items-center">
+        <div className="group flex flex-col items-start">
           <button
             type="button"
             title={data?.myReaction ? "Gỡ reaction" : "Thích"}
@@ -580,9 +609,20 @@ export default function PostInteractions({
             }
             aria-pressed={Boolean(data?.myReaction)}
             disabled={moderator || busy || loading || Boolean(error)}
-            onClick={() =>
-              react(data?.myReaction ?? "LIKE")
+            onPointerDown={() =>
+              startReactionHold(() => setReactionMenuOpen(true))
             }
+            onPointerUp={endReactionHold}
+            onPointerCancel={endReactionHold}
+            onPointerLeave={endReactionHold}
+            onContextMenu={(event) => event.preventDefault()}
+            onClick={() => {
+              if (longPressTriggered.current) {
+                longPressTriggered.current = false;
+                return;
+              }
+              void react(data?.myReaction ?? "LIKE");
+            }}
             className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition ${
               data?.myReaction
                 ? "border-pink-300 bg-pink-100 text-pink-700"
@@ -596,44 +636,44 @@ export default function PostInteractions({
               {REACTIONS.find((item) => item.value === data?.myReaction)?.label ?? "Thích"}
             </span>
           </button>
-          <button
-            type="button"
-            className="ml-1 grid h-9 w-8 place-items-center rounded-full text-xs text-ink-soft hover:bg-pink-50 sm:hidden"
-            aria-label="Chọn cảm xúc"
-            aria-expanded={reactionMenuOpen}
-            onClick={() => setReactionMenuOpen((open) => !open)}
-          >
-            ▴
-          </button>
           {!moderator && (
             <div
-              className="absolute bottom-full left-0 z-10 pb-2"
+              className={`grid w-full grid-rows-[0fr] transition-[grid-template-rows] duration-150 [@media(hover:hover)]:group-hover:grid-rows-[1fr] [@media(hover:hover)]:group-focus-within:grid-rows-[1fr] ${
+                reactionMenuOpen ? "grid-rows-[1fr]" : ""
+              }`}
             >
               <div
-                className={`flex origin-bottom-left items-center gap-1 rounded-full border border-line bg-white p-1.5 shadow-lift transition duration-150 ${
+                className={`min-h-0 overflow-hidden ${
                   reactionMenuOpen
-                    ? "visible scale-100 opacity-100"
-                    : "invisible scale-95 opacity-0 group-hover:visible group-hover:scale-100 group-hover:opacity-100 group-focus-within:visible group-focus-within:scale-100 group-focus-within:opacity-100"
+                    ? "visible opacity-100"
+                    : "invisible opacity-0 [@media(hover:hover)]:group-hover:visible [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:visible [@media(hover:hover)]:group-focus-within:opacity-100"
                 }`}
-                role="group"
-                aria-label="Chọn reaction"
               >
-                {REACTIONS.map(({ value, emoji, label }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    title={`${label} (${data?.reactionCounts[value] ?? 0})`}
-                    aria-label={`${label}, ${data?.reactionCounts[value] ?? 0}`}
-                    aria-pressed={data?.myReaction === value}
-                    disabled={busy || loading || Boolean(error)}
-                    onClick={() => react(value)}
-                    className={`grid h-10 w-10 place-items-center rounded-full text-2xl transition hover:-translate-y-1 hover:scale-125 ${
-                      data?.myReaction === value ? "bg-pink-100" : "hover:bg-pink-50"
-                    }`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
+                <div
+                  className="mt-2 flex items-center gap-1 rounded-full border border-line bg-white p-1.5 shadow-lift"
+                  role="group"
+                  aria-label="Chọn reaction"
+                >
+                  {REACTIONS.map(({ value, emoji, label }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      title={`${label} (${data?.reactionCounts[value] ?? 0})`}
+                      aria-label={`${label}, ${data?.reactionCounts[value] ?? 0}`}
+                      aria-pressed={data?.myReaction === value}
+                      disabled={busy || loading || Boolean(error)}
+                      onClick={() => {
+                        longPressTriggered.current = false;
+                        void react(value);
+                      }}
+                      className={`grid h-10 w-10 place-items-center rounded-full text-2xl transition hover:-translate-y-1 hover:scale-125 ${
+                        data?.myReaction === value ? "bg-pink-100" : "hover:bg-pink-50"
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
