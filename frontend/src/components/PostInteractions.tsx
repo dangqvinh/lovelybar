@@ -753,23 +753,33 @@ export default function PostInteractions({
       >
         <div className="flex items-center justify-between gap-3">
           <span className="text-sm font-bold">Bình luận</span>
-          <label className="flex items-center gap-2 text-xs text-ink-soft">
+          <div className="flex items-center gap-2 text-xs text-ink-soft">
             <span>Sắp xếp:</span>
-            <select
-              value={commentSortOrder}
-              onChange={(event) => {
-                const value = event.target.value;
-                if (value === "newest" || value === "oldest") {
-                  setCommentSortOrder(value);
-                }
-              }}
-              className="rounded-lg border border-line bg-white px-2 py-1.5 text-xs text-ink"
+            <div
+              className="inline-flex rounded-full border border-line bg-white p-0.5"
+              role="group"
               aria-label="Sắp xếp bình luận theo thời gian"
             >
-              <option value="newest">Mới nhất</option>
-              <option value="oldest">Cũ nhất</option>
-            </select>
-          </label>
+              {([
+                ["newest", "Mới nhất"],
+                ["oldest", "Cũ nhất"],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={commentSortOrder === value}
+                  onClick={() => setCommentSortOrder(value)}
+                  className={`rounded-full px-2.5 py-1.5 font-semibold transition ${
+                    commentSortOrder === value
+                      ? "bg-pink-100 text-pink-700"
+                      : "text-ink-soft hover:bg-pink-50 hover:text-ink"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
         {loading && !data ? (
           <Spinner label="Đang tải bình luận" />
