@@ -42,6 +42,12 @@ export default function PostInteractions({
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState("");
   const [busy, setBusy] = useState(false);
+  const [commentSortOrder, setCommentSortOrder] = useState<"newest" | "oldest">(
+    "newest",
+  );
+  const [expandedReplyIds, setExpandedReplyIds] = useState<Set<number>>(
+    () => new Set(),
+  );
   const [reactionMenuOpen, setReactionMenuOpen] = useState(false);
   const [commentReactionMenuId, setCommentReactionMenuId] = useState<number | null>(
     null,
@@ -215,6 +221,7 @@ export default function PostInteractions({
         setReplyContent("");
         setReplyFiles([]);
         setReplyingToId(null);
+        setExpandedReplyIds((current) => new Set(current).add(parentId));
       }
       if (!moderator) {
         setOwnedCommentIds((current) => new Set(current).add(createdComment.id));
@@ -317,17 +324,18 @@ export default function PostInteractions({
     ? Object.values(data.reactionCounts).reduce((sum, count) => sum + count, 0)
     : 0;
   const comments = data?.comments ?? [];
+  const sortByTime = (list: typeof comments) =>
+    [...list].sort((a, b) => {
+      const timeOrder = a.createdAt.localeCompare(b.createdAt);
+      const direction = commentSortOrder === "newest" ? -1 : 1;
+      return timeOrder * direction || (a.id - b.id) * direction;
+    });
 
   function renderComment(item: (typeof comments)[number], depth = 0) {
-    const sortByReactions = (list: typeof comments) =>
-      [...list].sort((a, b) => {
-        const aTotal = Object.values(a.reactionCounts).reduce((sum, count) => sum + count, 0);
-        const bTotal = Object.values(b.reactionCounts).reduce((sum, count) => sum + count, 0);
-        return bTotal - aTotal || b.createdAt.localeCompare(a.createdAt) || b.id - a.id;
-      });
-    const replies = sortByReactions(
+    const replies = sortByTime(
       comments.filter((candidate) => candidate.parentId === item.id),
     );
+    const repliesExpanded = expandedReplyIds.has(item.id);
     const canEdit =
       !moderator &&
       (ownedCommentIds.has(item.id) ||
@@ -616,8 +624,32 @@ export default function PostInteractions({
           </form>
         )}
         {replies.length > 0 && (
-          <div className="mt-3 space-y-3">
-            {replies.map((reply) => renderComment(reply, depth + 1))}
+          <button
+            type="button"
+            aria-expanded={repliesExpanded}
+            aria-controls={`comment-replies-${item.id}`}
+            onClick={() =>
+              setExpandedReplyIds((current) => {
+                const next = new Set(current);
+                if (next.has(item.id)) next.delete(item.id);
+                else next.add(item.id);
+                return next;
+              })
+            }
+            className="mt-2 ml-10 text-xs font-semibold text-pink-700 hover:text-pink-800"
+          >
+            {repliesExpanded
+              ? "Ẩn câu trả lời"
+              : `Xem ${replies.length} câu trả lời`}
+          </button>
+        )}
+        {replies.length > 0 && (
+          <div
+            id={`comment-replies-${item.id}`}
+            className={`mt-3 space-y-3 ${repliesExpanded ? "" : "hidden"}`}
+          >
+            {repliesExpanded &&
+              replies.map((reply) => renderComment(reply, depth + 1))}
           </div>
         )}
       </div>
@@ -719,6 +751,26 @@ export default function PostInteractions({
             : ""
         }`}
       >
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-bold">Bình luận</span>
+          <label className="flex items-center gap-2 text-xs text-ink-soft">
+            <span>Sắp xếp:</span>
+            <select
+              value={commentSortOrder}
+              onChange={(event) => {
+                const value = event.target.value;
+                if (value === "newest" || value === "oldest") {
+                  setCommentSortOrder(value);
+                }
+              }}
+              className="rounded-lg border border-line bg-white px-2 py-1.5 text-xs text-ink"
+              aria-label="Sắp xếp bình luận theo thời gian"
+            >
+              <option value="newest">Mới nhất</option>
+              <option value="oldest">Cũ nhất</option>
+            </select>
+          </label>
+        </div>
         {loading && !data ? (
           <Spinner label="Đang tải bình luận" />
         ) : error ? (
@@ -733,13 +785,7 @@ export default function PostInteractions({
             </button>
           </div>
         ) : (
-          [...comments]
-            .filter((item) => item.parentId === null)
-            .sort((a, b) => {
-              const aTotal = Object.values(a.reactionCounts).reduce((sum, count) => sum + count, 0);
-              const bTotal = Object.values(b.reactionCounts).reduce((sum, count) => sum + count, 0);
-              return bTotal - aTotal || b.createdAt.localeCompare(a.createdAt) || b.id - a.id;
-            })
+          sortByTime(comments.filter((item) => item.parentId === null))
             .map((item) => renderComment(item))
         )}
       </div>
