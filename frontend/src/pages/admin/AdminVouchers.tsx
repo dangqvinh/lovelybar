@@ -1,11 +1,12 @@
 import { FormEvent, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import ProductImage from "../../components/ProductImage";
 import { ErrorState, Spinner } from "../../components/States";
 import { useAsync } from "../../hooks/useAsync";
 import { api } from "../../services/api";
-import type { Product, VoucherInput } from "../../types";
+import type { Product, Voucher, VoucherInput } from "../../types";
 import { formatVND } from "../../utils/format";
 
 const empty: VoucherInput = {
@@ -26,6 +27,12 @@ function generateVoucherCode(): string {
   const values = new Uint32Array(8);
   crypto.getRandomValues(values);
   return `LB${Array.from(values, (value) => alphabet[value % alphabet.length]).join("")}`;
+}
+
+function toDateTimeLocal(value: string): string {
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
 function Field({
@@ -53,6 +60,9 @@ export default function AdminVouchers() {
   const products = useAsync(api.admin.products);
   const [form, setForm] = useState<VoucherInput>(empty);
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState<Voucher | null>(null);
+  const [toDelete, setToDelete] = useState<Voucher | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [productSearch, setProductSearch] = useState("");
 
   const availableProducts = useMemo(
@@ -101,15 +111,21 @@ export default function AdminVouchers() {
     }
     setBusy(true);
     try {
-      await api.admin.createVoucher({
+      const input = {
         ...form,
-        code: generateVoucherCode(),
+        code: editing?.code ?? generateVoucherCode(),
         startsAt: new Date(form.startsAt).toISOString(),
         expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null,
-      });
+      };
+      if (editing) {
+        await api.admin.updateVoucher(editing.id, input);
+      } else {
+        await api.admin.createVoucher(input);
+      }
       setForm({ ...empty, startsAt: new Date().toISOString().slice(0, 16) });
       setProductSearch("");
-      toast.success("Đã tạo voucher");
+      setEditing(null);
+      toast.success(editing ? "Đã cập nhật voucher" : "Đã tạo voucher");
       vouchers.reload();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không thể tạo voucher");
@@ -117,6 +133,43 @@ export default function AdminVouchers() {
       setBusy(false);
     }
   }
+
+  function startEditing(voucher: Voucher) {
+      setEditing(voucher);
+      setForm({
+        code: voucher.code,
+        name: voucher.name,
+        description: voucher.description,
+        discountValue: voucher.discountValue,
+        usageLimit: voucher.usageLimit,
+        customerIdentifier: voucher.customerIdentifier,
+        startsAt: toDateTimeLocal(voucher.startsAt),
+        expiresAt: voucher.expiresAt ? toDateTimeLocal(voucher.expiresAt) : null,
+        isActive: voucher.isActive,
+        productIds: voucher.productIds.filter((id) => availableProducts.some((product) => product.id === id)),
+      });
+      setProductSearch("");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+  async function deleteVoucher() {
+      if (!toDelete) return;
+      setDeleteBusy(true);
+      try {
+        await api.admin.deleteVoucher(toDelete.id);
+        toast.success("Đã xóa voucher");
+        setToDelete(null);
+        vouchers.reload();
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? `${error.message}. Nếu voucher đã được sử dụng, hãy tắt voucher thay vì xóa.`
+            : "Không thể xóa voucher",
+        );
+      } finally {
+        setDeleteBusy(false);
+      }
+    }
 
   if (vouchers.loading || products.loading) return <Spinner label="Đang tải dữ liệu voucher" />;
   if (vouchers.error) return <ErrorState message={vouchers.error} onRetry={vouchers.reload} />;
@@ -133,10 +186,26 @@ export default function AdminVouchers() {
 
       <form onSubmit={submit} className="card space-y-6 p-5 sm:p-6">
         <section>
-          <h2 className="text-lg font-bold">Thông tin voucher</h2>
-          <p className="mt-1 text-sm text-ink-soft">
-            Mã voucher sẽ được hệ thống tự sinh sau khi bạn tạo.
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold">{editing ? "Chỉnh sửa voucher" : "Thông tin voucher"}</h2>
+              {editing ? (
+                <p className="mt-1 text-sm text-ink-soft">
+                  Mã <strong className="text-ink">{editing.code}</strong> được giữ nguyên để không ảnh hưởng đến khách hàng đã nhận mã.
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-ink-soft">Mã voucher sẽ được hệ thống tự sinh sau khi bạn tạo.</p>
+              )}
+            </div>
+            {editing && (
+              <button type="button" className="btn-soft whitespace-nowrap" onClick={() => {
+                setEditing(null);
+                setForm({ ...empty, startsAt: new Date().toISOString().slice(0, 16) });
+              }}>
+                Hủy sửa
+              </button>
+            )}
+          </div>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <Field label="Tên chương trình" hint="Ví dụ: Ưu đãi khách quen">
               <input
@@ -264,7 +333,7 @@ export default function AdminVouchers() {
             Mỗi đơn hàng chỉ được sử dụng một voucher.
           </p>
           <button disabled={busy} className="btn-primary min-w-44">
-            {busy ? "Đang tạo..." : "Tạo voucher"}
+          {busy ? "Đang lưu..." : editing ? "Lưu thay đổi" : "Tạo voucher"}
           </button>
         </div>
       </form>
@@ -294,6 +363,7 @@ export default function AdminVouchers() {
                 <td>{voucher.customerIdentifier ?? "Tất cả"}</td>
                 <td>{voucher.isActive ? "Đang bật" : "Đã tắt"}</td>
                 <td>
+                  <div className="flex gap-2">
                   <button
                     className="text-pink-600 hover:underline"
                     onClick={async () => {
@@ -303,12 +373,31 @@ export default function AdminVouchers() {
                   >
                     {voucher.isActive ? "Tắt" : "Bật"}
                   </button>
+                  <button className="text-pink-600 hover:underline" onClick={() => startEditing(voucher)}>
+                    Sửa
+                  </button>
+                  <button className="text-red-600 hover:underline" onClick={() => setToDelete(voucher)}>
+                    Xóa
+                  </button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </section>
+      <ConfirmDialog
+        open={!!toDelete}
+        title="Xóa voucher này?"
+        confirmLabel="Xóa voucher"
+        danger
+        busy={deleteBusy}
+        onConfirm={deleteVoucher}
+        onCancel={() => setToDelete(null)}
+      >
+        Voucher <strong>{toDelete?.code}</strong> sẽ bị xóa vĩnh viễn. Voucher đã
+        được sử dụng không thể xóa để bảo toàn lịch sử đơn hàng.
+      </ConfirmDialog>
     </div>
   );
 }

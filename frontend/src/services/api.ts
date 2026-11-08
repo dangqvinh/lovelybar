@@ -684,6 +684,11 @@ export const api = {
           .eq("id", id).select("*").single();
         return { data: data ? toVoucher(data) : null, error };
       }),
+    deleteVoucher: (id: number) =>
+      request<{ deleted: boolean }>(async () => {
+        const { error } = await supabase.from("vouchers").delete().eq("id", id);
+        return { data: error ? null : { deleted: true }, error };
+      }),
     donationSettings: () =>
       request<DonationSettings>(async () => {
         const { data, error } = await supabase
