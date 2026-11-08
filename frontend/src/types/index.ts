@@ -77,15 +77,12 @@ export interface Order {
   items: OrderItem[]
 }
 
-export type VoucherDiscountType = "PERCENTAGE" | "FIXED_AMOUNT";
 export interface Voucher {
   id: number
   code: string
   name: string
   description: string
-  discountType: VoucherDiscountType
   discountValue: number
-  maxDiscountAmount: number | null
   minimumOrderAmount: number
   usageLimit: number | null
   usedCount: number
@@ -93,8 +90,6 @@ export interface Voucher {
   startsAt: string
   expiresAt: string | null
   isActive: boolean
-  campaign: string | null
-  allowStacking: boolean
   productIds: number[]
   createdAt: string
 }
@@ -103,17 +98,13 @@ export interface VoucherInput {
   code: string
   name: string
   description: string
-  discountType: VoucherDiscountType
   discountValue: number
-  maxDiscountAmount: number | null
   minimumOrderAmount: number
   usageLimit: number | null
   customerIdentifier: string | null
   startsAt: string
   expiresAt: string | null
   isActive: boolean
-  campaign: string | null
-  allowStacking: boolean
   productIds: number[]
 }
 

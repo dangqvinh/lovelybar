@@ -254,14 +254,12 @@ function toOrder(row: any): Order {
 function toVoucher(row: any): Voucher {
   return {
     id: Number(row.id), code: row.code, name: row.name, description: row.description ?? "",
-    discountType: row.discount_type ?? row.discountType,
     discountValue: Number(row.discount_value ?? row.discountValue),
-    maxDiscountAmount: row.max_discount_amount == null ? null : Number(row.max_discount_amount),
     minimumOrderAmount: Number(row.minimum_order_amount ?? 0),
     usageLimit: row.usage_limit == null ? null : Number(row.usage_limit),
     usedCount: Number(row.used_count ?? 0), customerIdentifier: row.customer_identifier ?? null,
     startsAt: row.starts_at, expiresAt: row.expires_at ?? null, isActive: Boolean(row.is_active),
-    campaign: row.campaign ?? null, allowStacking: Boolean(row.allow_stacking), createdAt: row.created_at,
+    createdAt: row.created_at,
     productIds: Array.isArray(row.product_ids) ? row.product_ids.map(Number) : [],
   };
 }
@@ -646,11 +644,10 @@ export const api = {
       request<Voucher>(async () => {
         const { data, error } = await supabase.from("vouchers").insert({
           code: input.code.trim().toUpperCase(), name: input.name.trim(), description: input.description,
-          discount_type: input.discountType, discount_value: input.discountValue,
-          max_discount_amount: input.maxDiscountAmount, minimum_order_amount: input.minimumOrderAmount,
+          discount_type: "PERCENTAGE", discount_value: input.discountValue,
+          max_discount_amount: null, minimum_order_amount: input.minimumOrderAmount,
           usage_limit: input.usageLimit, customer_identifier: input.customerIdentifier?.trim().toLowerCase() || null,
           starts_at: input.startsAt, expires_at: input.expiresAt, is_active: input.isActive,
-          campaign: input.campaign, allow_stacking: input.allowStacking,
         }).select("*").single();
         if (error || !data) return { data: null, error };
         if (input.productIds.length) {
@@ -665,11 +662,11 @@ export const api = {
       request<Voucher>(async () => {
         const { data, error } = await supabase.from("vouchers").update({
           code: input.code.trim().toUpperCase(), name: input.name.trim(), description: input.description,
-          discount_type: input.discountType, discount_value: input.discountValue,
-          max_discount_amount: input.maxDiscountAmount, minimum_order_amount: input.minimumOrderAmount,
+          discount_type: "PERCENTAGE", discount_value: input.discountValue,
+          max_discount_amount: null, minimum_order_amount: input.minimumOrderAmount,
           usage_limit: input.usageLimit, customer_identifier: input.customerIdentifier?.trim().toLowerCase() || null,
           starts_at: input.startsAt, expires_at: input.expiresAt, is_active: input.isActive,
-          campaign: input.campaign, allow_stacking: input.allowStacking, updated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         }).eq("id", id).select("*").single();
         if (error || !data) return { data: null, error };
         const { error: deleteLinksError } = await supabase.from("voucher_products").delete().eq("voucher_id", id);
