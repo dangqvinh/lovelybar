@@ -23,6 +23,7 @@ import AdminPosts from './pages/admin/AdminPosts';
 import PostForm from './pages/admin/PostForm';
 import AdminPostDetail from './pages/admin/AdminPostDetail';
 import AdminDonation from './pages/admin/AdminDonation';
+import AdminVouchers from './pages/admin/AdminVouchers';
 
 function AdminRouteGuard() {
   const [ready, setReady] = useState(false);
@@ -79,6 +80,7 @@ export default function App() {
           <Route path="orders" element={<AdminOrders />} />
           <Route path="reports" element={<Reports />} />
           <Route path="donation" element={<AdminDonation />} />
+          <Route path="vouchers" element={<AdminVouchers />} />
           <Route path="posts" element={<AdminPosts />} />
           <Route path="posts/create" element={<PostForm />} />
           <Route path="posts/:id" element={<AdminPostDetail />} />

@@ -14,6 +14,8 @@ import type {
   QRResult,
   SalesReportRow,
   Stats,
+  Voucher,
+  VoucherInput,
 } from "../types";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 
@@ -238,11 +240,29 @@ function toOrder(row: any): Order {
     id: Number(row.id),
     orderCode: row.order_code ?? row.orderCode ?? "",
     totalAmount: Number(row.total_amount ?? row.totalAmount ?? 0),
+    subtotalAmount: Number(row.subtotal_amount ?? row.subtotalAmount ?? row.total_amount ?? row.totalAmount ?? 0),
+    discountAmount: Number(row.discount_amount ?? row.discountAmount ?? 0),
+    voucherCode: row.voucher_code ?? row.voucherCode ?? null,
     paymentMethod: row.payment_method ?? row.paymentMethod ?? "BANK",
     orderStatus: row.order_status ?? row.orderStatus ?? "PENDING",
     createdAt: row.created_at ?? row.createdAt ?? new Date().toISOString(),
     updatedAt: row.updated_at ?? row.updatedAt ?? new Date().toISOString(),
     items: Array.isArray(row.items) ? row.items.map(toOrderItem) : [],
+  };
+}
+
+function toVoucher(row: any): Voucher {
+  return {
+    id: Number(row.id), code: row.code, name: row.name, description: row.description ?? "",
+    discountType: row.discount_type ?? row.discountType,
+    discountValue: Number(row.discount_value ?? row.discountValue),
+    maxDiscountAmount: row.max_discount_amount == null ? null : Number(row.max_discount_amount),
+    minimumOrderAmount: Number(row.minimum_order_amount ?? 0),
+    usageLimit: row.usage_limit == null ? null : Number(row.usage_limit),
+    usedCount: Number(row.used_count ?? 0), customerIdentifier: row.customer_identifier ?? null,
+    startsAt: row.starts_at, expiresAt: row.expires_at ?? null, isActive: Boolean(row.is_active),
+    campaign: row.campaign ?? null, allowStacking: Boolean(row.allow_stacking), createdAt: row.created_at,
+    productIds: Array.isArray(row.product_ids) ? row.product_ids.map(Number) : [],
   };
 }
 
@@ -505,9 +525,11 @@ export const api = {
       { type: "BANK", code: "BANK", name: "Chuyển khoản ngân hàng (VietQR)" },
     ] as PaymentMethod[]),
 
-  createOrder: (items: { productId: number; quantity: number }[]) =>
+  createOrder: (items: { productId: number; quantity: number }[], voucherCode?: string, customerIdentifier?: string) =>
     request<Order>(async () => {
-      const { data, error } = await supabase.rpc("create_order", { items });
+      const { data, error } = await supabase.rpc("create_order", {
+        items, voucher_code_input: voucherCode || null, customer_identifier_input: customerIdentifier || null,
+      });
       return { data: data ? toOrder(data) : null, error };
     }),
 
@@ -606,6 +628,66 @@ export const api = {
     }),
 
   admin: {
+    vouchers: () =>
+      request<Voucher[]>(async () => {
+        const { data, error } = await supabase.from("vouchers").select("*").order("created_at", { ascending: false });
+        if (error || !data) return { data: null, error };
+        const { data: links, error: linksError } = await supabase.from("voucher_products").select("voucher_id, product_id");
+        if (linksError) return { data: null, error: linksError };
+        const productIds = new Map<number, number[]>();
+        for (const link of links ?? []) {
+          const current = productIds.get(Number(link.voucher_id)) ?? [];
+          current.push(Number(link.product_id));
+          productIds.set(Number(link.voucher_id), current);
+        }
+        return { data: data.map((row) => toVoucher({ ...row, product_ids: productIds.get(Number(row.id)) ?? [] })), error: null };
+      }),
+    createVoucher: (input: VoucherInput) =>
+      request<Voucher>(async () => {
+        const { data, error } = await supabase.from("vouchers").insert({
+          code: input.code.trim().toUpperCase(), name: input.name.trim(), description: input.description,
+          discount_type: input.discountType, discount_value: input.discountValue,
+          max_discount_amount: input.maxDiscountAmount, minimum_order_amount: input.minimumOrderAmount,
+          usage_limit: input.usageLimit, customer_identifier: input.customerIdentifier?.trim().toLowerCase() || null,
+          starts_at: input.startsAt, expires_at: input.expiresAt, is_active: input.isActive,
+          campaign: input.campaign, allow_stacking: input.allowStacking,
+        }).select("*").single();
+        if (error || !data) return { data: null, error };
+        if (input.productIds.length) {
+          const { error: linkError } = await supabase.from("voucher_products").insert(
+            input.productIds.map((productId) => ({ voucher_id: data.id, product_id: productId })),
+          );
+          if (linkError) return { data: null, error: linkError };
+        }
+        return { data: toVoucher(data), error: null };
+      }),
+    updateVoucher: (id: number, input: VoucherInput) =>
+      request<Voucher>(async () => {
+        const { data, error } = await supabase.from("vouchers").update({
+          code: input.code.trim().toUpperCase(), name: input.name.trim(), description: input.description,
+          discount_type: input.discountType, discount_value: input.discountValue,
+          max_discount_amount: input.maxDiscountAmount, minimum_order_amount: input.minimumOrderAmount,
+          usage_limit: input.usageLimit, customer_identifier: input.customerIdentifier?.trim().toLowerCase() || null,
+          starts_at: input.startsAt, expires_at: input.expiresAt, is_active: input.isActive,
+          campaign: input.campaign, allow_stacking: input.allowStacking, updated_at: new Date().toISOString(),
+        }).eq("id", id).select("*").single();
+        if (error || !data) return { data: null, error };
+        const { error: deleteLinksError } = await supabase.from("voucher_products").delete().eq("voucher_id", id);
+        if (deleteLinksError) return { data: null, error: deleteLinksError };
+        if (input.productIds.length) {
+          const { error: linkError } = await supabase.from("voucher_products").insert(
+            input.productIds.map((productId) => ({ voucher_id: id, product_id: productId })),
+          );
+          if (linkError) return { data: null, error: linkError };
+        }
+        return { data: toVoucher(data), error: null };
+      }),
+    setVoucherActive: (id: number, isActive: boolean) =>
+      request<Voucher>(async () => {
+        const { data, error } = await supabase.from("vouchers").update({ is_active: isActive, updated_at: new Date().toISOString() })
+          .eq("id", id).select("*").single();
+        return { data: data ? toVoucher(data) : null, error };
+      }),
     donationSettings: () =>
       request<DonationSettings>(async () => {
         const { data, error } = await supabase

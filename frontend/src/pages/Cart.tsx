@@ -16,6 +16,8 @@ export default function Cart() {
   const saleActive = useNightSale();
   const navigate = useNavigate();
   const [creatingOrder, setCreatingOrder] = useState(false);
+  const [voucherCode, setVoucherCode] = useState("");
+  const [customerIdentifier, setCustomerIdentifier] = useState("");
   const total = items.reduce(
     (sum, item) => sum + getSalePrice(item.price, saleActive) * item.quantity,
     0,
@@ -30,6 +32,8 @@ export default function Cart() {
           productId: item.productId,
           quantity: item.quantity,
         })),
+        voucherCode,
+        customerIdentifier,
       );
       clear();
       navigate(`/checkout?order=${encodeURIComponent(order.orderCode)}`);
@@ -125,6 +129,28 @@ export default function Cart() {
             </li>
           ))}
         </ul>
+        <aside className="card h-fit p-4 sm:p-5">
+          <h2 className="font-bold">Mã voucher</h2>
+          <p className="mt-1 text-sm text-ink-soft">
+            Nhập mã được gửi riêng cho bạn. Nếu voucher gắn với khách hàng, nhập số điện thoại hoặc email đã nhận mã.
+          </p>
+          <input
+            value={voucherCode}
+            onChange={(event) => setVoucherCode(event.target.value.toUpperCase())}
+            placeholder="VD: WELCOME20K"
+            className="mt-4 w-full rounded-xl border border-line px-3 py-2 uppercase outline-none focus:border-pink-500"
+            maxLength={40}
+          />
+          {voucherCode && (
+            <input
+              value={customerIdentifier}
+              onChange={(event) => setCustomerIdentifier(event.target.value)}
+              placeholder="Số điện thoại hoặc email (nếu cần)"
+              className="mt-2 w-full rounded-xl border border-line px-3 py-2 outline-none focus:border-pink-500"
+              maxLength={200}
+            />
+          )}
+        </aside>
 
         <aside className="card h-fit p-5 lg:sticky lg:top-24">
           <p className="text-sm text-ink-soft">Tổng cộng</p>

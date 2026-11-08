@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabase";
 function AdminNavIcon({
   name,
 }: {
-  name: "dashboard" | "products" | "posts" | "orders" | "reports" | "donation";
+  name: "dashboard" | "products" | "posts" | "orders" | "reports" | "donation" | "vouchers";
 }) {
   const paths = {
     dashboard: <><rect x="3" y="3" width="8" height="8" rx="1.5" /><rect x="13" y="3" width="8" height="5" rx="1.5" /><rect x="13" y="10" width="8" height="11" rx="1.5" /><rect x="3" y="13" width="8" height="8" rx="1.5" /></>,
@@ -15,6 +15,7 @@ function AdminNavIcon({
     orders: <><path d="M5 4h14v17H5z" /><path d="M9 4V2h6v2M8 9h8M8 13h8M8 17h5" /></>,
     reports: <><path d="M4 20V10m8 10V4m8 16v-7" /><path d="M2 20h20" /></>,
     donation: <><path d="M20.8 8.8c0 5.2-8.8 11-8.8 11s-8.8-5.8-8.8-11A4.8 4.8 0 0 1 12 6.4a4.8 4.8 0 0 1 8.8 2.4Z" /><path d="M12 8v6m-3-3h6" /></>,
+    vouchers: <><path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 0 0 6v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-6V6Z" /><path d="M9 8h6m-6 8h6" /></>,
   };
 
   return (
@@ -88,6 +89,10 @@ export default function AdminLayout() {
             <NavLink to="/admin/donation" className={cls}>
               <AdminNavIcon name="donation" />
               Ủng hộ
+            </NavLink>
+            <NavLink to="/admin/vouchers" className={cls}>
+              <AdminNavIcon name="vouchers" />
+              Voucher
             </NavLink>
           </nav>
           <button
