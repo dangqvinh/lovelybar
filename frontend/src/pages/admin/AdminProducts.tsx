@@ -9,6 +9,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { api } from "../../services/api";
 import type { Product } from "../../types";
 import { formatVND } from "../../utils/format";
+import { getProductPrice } from "../../utils/pricing";
 
 export default function AdminProducts() {
   const { data, loading, error, reload } = useAsync(api.admin.products);
@@ -105,12 +106,21 @@ export default function AdminProducts() {
                   </td>
                   <td className="p-4 text-right font-semibold">
                     <div className="text-right">
-                      {p.discountPercent > 0 && (
-                        <span className="mr-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
-                          -{p.discountPercent}%
-                        </span>
+                      {p.discountPercent > 0 ? (
+                        <>
+                          <span className="block text-base font-extrabold text-pink-600">
+                            {formatVND(getProductPrice(p.price, p.discountPercent, false))}
+                          </span>
+                          <span className="block text-xs text-ink-soft line-through">
+                            {formatVND(p.price)}
+                          </span>
+                          <span className="mt-1 inline-block rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
+                            -{p.discountPercent}%
+                          </span>
+                        </>
+                      ) : (
+                        formatVND(p.price)
                       )}
-                      {formatVND(p.price)}
                     </div>
                   </td>
                   <td className="p-4">
