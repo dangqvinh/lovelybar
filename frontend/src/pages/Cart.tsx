@@ -7,7 +7,7 @@ import QuantityStepper from "../components/QuantityStepper";
 import { EmptyState } from "../components/States";
 import SaleNotice from "../components/SaleNotice";
 import { useNightSale } from "../hooks/useNightSale";
-import { getSalePrice } from "../utils/pricing";
+import { getProductPrice } from "../utils/pricing";
 import { useCart } from "../store/cart";
 import { formatVND } from "../utils/format";
 
@@ -18,7 +18,7 @@ export default function Cart() {
   const [creatingOrder, setCreatingOrder] = useState(false);
   const [voucherCode, setVoucherCode] = useState("");
   const total = items.reduce(
-    (sum, item) => sum + getSalePrice(item.price, saleActive) * item.quantity,
+    (sum, item) => sum + getProductPrice(item.price, item.discountPercent, saleActive) * item.quantity,
     0,
   );
 
@@ -90,17 +90,17 @@ export default function Cart() {
                     <div className="flex items-center gap-2 text-sm">
                       <div className="flex min-w-0 flex-col items-start">
                         <span className="font-semibold text-pink-600">
-                          {formatVND(getSalePrice(i.price, saleActive))} / sản phẩm
+                          {formatVND(getProductPrice(i.price, i.discountPercent, saleActive))} / sản phẩm
                         </span>
-                        {saleActive && (
+                        {(saleActive || (!saleActive && i.discountPercent > 0)) && (
                           <span className="text-xs text-ink-soft line-through">
                             {formatVND(i.price)}
                           </span>
                         )}
                       </div>
-                      {saleActive && (
+                      {(saleActive || (!saleActive && i.discountPercent > 0)) && (
                         <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-extrabold text-red-700">
-                          -20%
+                          -{saleActive ? 20 : i.discountPercent}%
                         </span>
                       )}
                     </div>
@@ -120,7 +120,7 @@ export default function Cart() {
                     onChange={(q) => setQuantity(i.productId, q)}
                   />
                   <p className="font-extrabold text-pink-600">
-                    {formatVND(getSalePrice(i.price, saleActive) * i.quantity)}
+                    {formatVND(getProductPrice(i.price, i.discountPercent, saleActive) * i.quantity)}
                   </p>
                 </div>
               </div>
@@ -130,7 +130,7 @@ export default function Cart() {
         <aside className="card h-fit p-4 sm:p-5">
           <h2 className="font-bold">Mã voucher</h2>
           <p className="mt-1 text-sm text-ink-soft">
-            Nhập mã được gửi riêng cho bạn. Nếu voucher gắn với khách hàng, nhập số điện thoại hoặc email đã nhận mã.
+            Nhập mã voucher nếu bạn có. Voucher không áp dụng trong giờ vàng.
           </p>
           <input
             value={voucherCode}

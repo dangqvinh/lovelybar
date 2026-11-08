@@ -17,3 +17,12 @@ export function isNightSaleActive(date = new Date()): boolean {
 export function getSalePrice(price: number, saleActive: boolean): number {
   return saleActive ? Math.floor((price * 80) / 100) : price;
 }
+
+export function getProductPrice(
+  price: number,
+  discountPercent: number,
+  saleActive: boolean,
+): number {
+  if (saleActive) return getSalePrice(price, true);
+  return Math.floor((price * (100 - discountPercent)) / 100);
+}

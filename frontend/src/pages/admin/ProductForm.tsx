@@ -24,6 +24,7 @@ export default function ProductForm() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [discountPercent, setDiscountPercent] = useState("");
   const [status, setStatus] = useState<ProductStatus>("AVAILABLE");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -37,6 +38,7 @@ export default function ProductForm() {
     setName(p.name);
     setDescription(p.description);
     setPrice(String(p.price));
+    setDiscountPercent(p.discountPercent ? String(p.discountPercent) : "");
     setStatus(p.status);
   }, [existing.data]);
 
@@ -62,6 +64,9 @@ export default function ProductForm() {
     const n = Number(price);
     if (price.trim() === "" || !Number.isInteger(n) || n < 0)
       e.price = "Giá phải là số nguyên lớn hơn hoặc bằng 0";
+    const discount = discountPercent === "" ? 0 : Number(discountPercent);
+    if (!Number.isInteger(discount) || discount < 0 || discount > 100)
+      e.discountPercent = "Giảm giá phải từ 0 đến 100%";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -75,6 +80,7 @@ export default function ProductForm() {
         name: name.trim(),
         description: description.trim(),
         price: Number(price),
+        discountPercent: discountPercent === "" ? 0 : Number(discountPercent),
         status,
       };
       const saved = editing
@@ -140,6 +146,26 @@ export default function ProductForm() {
           />
           {errors.name && (
             <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+          )}
+        </div>
+        <div>
+          <label htmlFor="discountPercent" className="label">
+            Giảm giá sản phẩm (%)
+          </label>
+          <input
+            id="discountPercent"
+            className="input"
+            inputMode="numeric"
+            placeholder="Bỏ trống nếu không giảm"
+            value={discountPercent}
+            onChange={(e) => setDiscountPercent(e.target.value.replace(/[^\d]/g, ""))}
+            aria-invalid={!!errors.discountPercent}
+          />
+          <p className="mt-1 text-xs text-ink-soft">
+            Áp dụng ngoài giờ vàng và khi khách không dùng voucher.
+          </p>
+          {errors.discountPercent && (
+            <p className="mt-1 text-sm text-red-600">{errors.discountPercent}</p>
           )}
         </div>
 

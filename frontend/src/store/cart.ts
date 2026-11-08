@@ -21,7 +21,7 @@ export const useCart = create<CartState>((set) => ({
       if (existing) {
         return { items: s.items.map((i) => (i.productId === p.id ? { ...i, quantity: clampQty(i.quantity + quantity) } : i)) }
       }
-      return { items: [...s.items, { productId: p.id, name: p.name, price: p.price, image: p.image, quantity: clampQty(quantity) }] }
+      return { items: [...s.items, { productId: p.id, name: p.name, price: p.price, image: p.image, quantity: clampQty(quantity), discountPercent: p.discountPercent }] }
     }),
   setQuantity: (id, q) => set((s) => ({ items: s.items.map((i) => (i.productId === id ? { ...i, quantity: clampQty(q) } : i)) })),
   increase: (id) => set((s) => ({ items: s.items.map((i) => (i.productId === id ? { ...i, quantity: clampQty(i.quantity + 1) } : i)) })),

@@ -45,6 +45,8 @@ const API_ERROR_TRANSLATIONS: Record<string, string> = {
     "Đơn hàng có quá nhiều loại sản phẩm.",
   "A product in your cart is no longer available":
     "Một sản phẩm trong giỏ hàng hiện không còn bán.",
+  "Voucher không áp dụng trong giờ vàng":
+    "Voucher không áp dụng trong giờ vàng (18:40–07:00).",
   "Invalid status filter": "Bộ lọc trạng thái không hợp lệ.",
   "Status must be PENDING, COMPLETED or CANCELLED":
     "Trạng thái đơn hàng không hợp lệ.",
@@ -113,6 +115,7 @@ function toProduct(row: any): Product {
     name: row.name,
     description: row.description ?? "",
     price: Number(row.price ?? 0),
+    discountPercent: Number(row.discount_percent ?? row.discountPercent ?? 0),
     image: row.image ?? null,
     status: row.status,
     createdAt: row.created_at ?? row.createdAt ?? new Date().toISOString(),
@@ -937,6 +940,7 @@ export const api = {
           name: p.name,
           description: p.description,
           price: p.price,
+          discount_percent: p.discountPercent,
           status: p.status,
         }).select("*").single();
         return { data: data ? toProduct(data) : null, error };
@@ -950,6 +954,7 @@ export const api = {
             name: p.name,
             description: p.description,
             price: p.price,
+            discount_percent: p.discountPercent,
             status: p.status,
           })
           .eq("id", id)

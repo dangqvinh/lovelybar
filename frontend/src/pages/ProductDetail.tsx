@@ -10,7 +10,7 @@ import { useAsync } from "../hooks/useAsync";
 import { api } from "../services/api";
 import { useCart } from "../store/cart";
 import { formatVND } from "../utils/format";
-import { getSalePrice } from "../utils/pricing";
+import { getProductPrice } from "../utils/pricing";
 import { useNightSale } from "../hooks/useNightSale";
 
 export default function ProductDetail() {
@@ -55,6 +55,7 @@ export default function ProductDetail() {
           <div className="mt-3">
             <PriceDisplay
               price={p.price}
+              discountPercent={p.discountPercent}
               className="text-3xl font-extrabold text-pink-600"
             />
           </div>
@@ -74,7 +75,7 @@ export default function ProductDetail() {
                 toast.success(`Đã thêm ${qty} × ${p.name} vào giỏ hàng`);
               }}
             >
-              Thêm vào giỏ · {formatVND(getSalePrice(p.price, saleActive) * qty)}
+              Thêm vào giỏ · {formatVND(getProductPrice(p.price, p.discountPercent, saleActive) * qty)}
             </button>
           </div>
           <Link

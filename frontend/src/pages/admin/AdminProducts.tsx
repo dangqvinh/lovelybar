@@ -24,6 +24,7 @@ export default function AdminProducts() {
         name: p.name,
         description: p.description,
         price: p.price,
+        discountPercent: p.discountPercent,
         status: next,
       });
       toast.success(
@@ -103,7 +104,14 @@ export default function AdminProducts() {
                     </div>
                   </td>
                   <td className="p-4 text-right font-semibold">
-                    {formatVND(p.price)}
+                    <div className="text-right">
+                      {p.discountPercent > 0 && (
+                        <span className="mr-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
+                          -{p.discountPercent}%
+                        </span>
+                      )}
+                      {formatVND(p.price)}
+                    </div>
                   </td>
                   <td className="p-4">
                     <StatusBadge status={p.status} />

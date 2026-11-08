@@ -6,6 +6,7 @@ export interface Product {
   name: string
   description: string
   price: number
+  discountPercent: number
   image: string | null
   status: ProductStatus
   createdAt: string
@@ -16,6 +17,7 @@ export interface ProductInput {
   name: string
   description: string
   price: number
+  discountPercent: number
   status: ProductStatus
 }
 
@@ -158,4 +160,5 @@ export interface CartItem {
   price: number
   image: string | null
   quantity: number
+  discountPercent: number
 }
