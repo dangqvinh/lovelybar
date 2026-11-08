@@ -90,6 +90,7 @@ export interface Voucher {
   startsAt: string
   expiresAt: string | null
   isActive: boolean
+  deletedAt: string | null
   productIds: number[]
   createdAt: string
 }

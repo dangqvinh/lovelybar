@@ -383,8 +383,8 @@ export default function AdminVouchers() {
         onConfirm={deleteVoucher}
         onCancel={() => setToDelete(null)}
       >
-        Voucher <strong>{toDelete?.code}</strong> sẽ bị xóa vĩnh viễn. Voucher đã
-        được sử dụng không thể xóa để bảo toàn lịch sử đơn hàng.
+        Voucher <strong>{toDelete?.code}</strong> sẽ bị ẩn khỏi danh sách và
+        tắt sử dụng. Lịch sử đơn hàng vẫn được giữ nguyên.
       </ConfirmDialog>
     </div>
   );

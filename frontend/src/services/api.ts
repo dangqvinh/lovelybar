@@ -262,6 +262,7 @@ function toVoucher(row: any): Voucher {
     usedCount: Number(row.used_count ?? 0),
     startsAt: row.starts_at, expiresAt: row.expires_at ?? null, isActive: Boolean(row.is_active),
     createdAt: row.created_at,
+    deletedAt: row.deleted_at ?? null,
     productIds: Array.isArray(row.product_ids) ? row.product_ids.map(Number) : [],
   };
 }
@@ -630,7 +631,7 @@ export const api = {
   admin: {
     vouchers: () =>
       request<Voucher[]>(async () => {
-        const { data, error } = await supabase.from("vouchers").select("*").order("created_at", { ascending: false });
+        const { data, error } = await supabase.from("vouchers").select("*").is("deleted_at", null).order("created_at", { ascending: false });
         if (error || !data) return { data: null, error };
         const { data: links, error: linksError } = await supabase.from("voucher_products").select("voucher_id, product_id");
         if (linksError) return { data: null, error: linksError };
@@ -689,7 +690,11 @@ export const api = {
       }),
     deleteVoucher: (id: number) =>
       request<{ deleted: boolean }>(async () => {
-        const { error } = await supabase.from("vouchers").delete().eq("id", id);
+        const { error } = await supabase.from("vouchers").update({
+          deleted_at: new Date().toISOString(),
+          is_active: false,
+          updated_at: new Date().toISOString(),
+        }).eq("id", id);
         return { data: error ? null : { deleted: true }, error };
       }),
     donationSettings: () =>
