@@ -31,14 +31,16 @@ function generateVoucherCode(): string {
 function Field({
   label,
   hint,
+  className = "",
   children,
 }: {
   label: string;
   hint?: string;
+  className?: string;
   children: ReactNode;
 }) {
   return (
-    <label className="block text-sm font-semibold">
+    <label className={`block text-sm font-semibold ${className}`}>
       {label}
       {children}
       {hint && <span className="mt-1 block text-xs font-normal text-ink-soft">{hint}</span>}
@@ -242,7 +244,11 @@ export default function AdminVouchers() {
                 onChange={(event) => setField("expiresAt", event.target.value || null)}
               />
             </Field>
-            <Field label="Mô tả" hint="Nội dung để admin dễ nhớ mục đích của voucher.">
+            <Field
+              label="Mô tả"
+              hint="Nội dung để admin dễ nhớ mục đích của voucher."
+              className="md:col-span-2"
+            >
               <textarea
                 className="mt-1 min-h-24 w-full rounded-xl border border-line px-3 py-2 md:col-span-2"
                 placeholder="Ví dụ: Cảm ơn bạn đã ủng hộ LovelyBar"
