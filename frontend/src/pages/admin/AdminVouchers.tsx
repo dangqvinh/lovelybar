@@ -62,8 +62,16 @@ export default function AdminVouchers() {
       </div>
       <form onSubmit={submit} className="card grid gap-3 p-5 md:grid-cols-2">
         <input className="rounded-xl border border-line px-3 py-2" placeholder="Tên chương trình" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        <input type="number" min="1" max="100" className="rounded-xl border border-line px-3 py-2" placeholder="Phần trăm giảm (%)" value={form.discountValue} onChange={(e) => setForm({ ...form, discountValue: Number(e.target.value) })} />
-        <input type="number" min="0" className="rounded-xl border border-line px-3 py-2" placeholder="Đơn tối thiểu (đ)" value={form.minimumOrderAmount} onChange={(e) => setForm({ ...form, minimumOrderAmount: Number(e.target.value) })} />
+        <label className="text-sm font-semibold">
+          Phần trăm giảm (%)
+          <input type="number" min="1" max="100" className="mt-1 w-full rounded-xl border border-line px-3 py-2" value={form.discountValue || ""} onChange={(e) => setForm({ ...form, discountValue: e.target.value === "" ? 0 : Number(e.target.value) })} />
+          <span className="mt-1 block text-xs font-normal text-ink-soft">Ví dụ: nhập 10 để giảm 10%.</span>
+        </label>
+        <label className="text-sm font-semibold">
+          Giá trị đơn hàng tối thiểu (đ)
+          <input type="number" min="0" className="mt-1 w-full rounded-xl border border-line px-3 py-2" value={form.minimumOrderAmount} onChange={(e) => setForm({ ...form, minimumOrderAmount: Number(e.target.value) })} />
+          <span className="mt-1 block text-xs font-normal text-ink-soft">Nhập 0 nếu voucher áp dụng cho mọi đơn hàng.</span>
+        </label>
         <input type="number" min="1" className="rounded-xl border border-line px-3 py-2" placeholder="Giới hạn lượt dùng (bỏ trống = không giới hạn)" value={form.usageLimit ?? ""} onChange={(e) => setForm({ ...form, usageLimit: e.target.value ? Number(e.target.value) : null })} />
         <input className="rounded-xl border border-line px-3 py-2" placeholder="Số điện thoại/email khách (tuỳ chọn)" value={form.customerIdentifier ?? ""} onChange={(e) => setForm({ ...form, customerIdentifier: e.target.value || null })} />
         <input className="rounded-xl border border-line px-3 py-2" placeholder="ID sản phẩm áp dụng (cách nhau bằng dấu phẩy, bỏ trống = tất cả)" value={productIdsText} onChange={(e) => setProductIdsText(e.target.value)} />
