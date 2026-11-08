@@ -83,7 +83,6 @@ export interface Voucher {
   name: string
   description: string
   discountValue: number
-  minimumOrderAmount: number
   usageLimit: number | null
   usedCount: number
   customerIdentifier: string | null
@@ -99,7 +98,6 @@ export interface VoucherInput {
   name: string
   description: string
   discountValue: number
-  minimumOrderAmount: number
   usageLimit: number | null
   customerIdentifier: string | null
   startsAt: string

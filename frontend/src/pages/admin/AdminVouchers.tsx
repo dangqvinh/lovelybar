@@ -6,7 +6,7 @@ import { api } from "../../services/api";
 import type { VoucherInput } from "../../types";
 
 const empty: VoucherInput = {
-  code: "", name: "", description: "", discountValue: 10, minimumOrderAmount: 0,
+  code: "", name: "", description: "",   discountValue: 0,
   usageLimit: null, customerIdentifier: null, startsAt: new Date().toISOString().slice(0, 16),
   expiresAt: null, isActive: true,
   productIds: [],
@@ -61,23 +61,18 @@ export default function AdminVouchers() {
         <p className="mt-1 text-ink-soft">Hệ thống tự sinh mã riêng để bạn gửi trực tiếp cho khách hàng.</p>
       </div>
       <form onSubmit={submit} className="card grid gap-3 p-5 md:grid-cols-2">
-        <input className="rounded-xl border border-line px-3 py-2" placeholder="Tên chương trình" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <input className="rounded-xl border border-line px-3 py-2" placeholder="Tên chương trình, ví dụ: Ưu đãi khách quen" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         <label className="text-sm font-semibold">
           Phần trăm giảm (%)
-          <input type="number" min="1" max="100" className="mt-1 w-full rounded-xl border border-line px-3 py-2" value={form.discountValue || ""} onChange={(e) => setForm({ ...form, discountValue: e.target.value === "" ? 0 : Number(e.target.value) })} />
-          <span className="mt-1 block text-xs font-normal text-ink-soft">Ví dụ: nhập 10 để giảm 10%.</span>
-        </label>
-        <label className="text-sm font-semibold">
-          Giá trị đơn hàng tối thiểu (đ)
-          <input type="number" min="0" className="mt-1 w-full rounded-xl border border-line px-3 py-2" value={form.minimumOrderAmount} onChange={(e) => setForm({ ...form, minimumOrderAmount: Number(e.target.value) })} />
-          <span className="mt-1 block text-xs font-normal text-ink-soft">Nhập 0 nếu voucher áp dụng cho mọi đơn hàng.</span>
+          <input type="number" min="1" max="100" placeholder="Ví dụ: 10" className="mt-1 w-full rounded-xl border border-line px-3 py-2" value={form.discountValue || ""} onChange={(e) => setForm({ ...form, discountValue: e.target.value === "" ? 0 : Number(e.target.value) })} />
+          <span className="mt-1 block text-xs font-normal text-ink-soft">Nhập từ 1 đến 100. Ví dụ: 10 = giảm 10%.</span>
         </label>
         <input type="number" min="1" className="rounded-xl border border-line px-3 py-2" placeholder="Giới hạn lượt dùng (bỏ trống = không giới hạn)" value={form.usageLimit ?? ""} onChange={(e) => setForm({ ...form, usageLimit: e.target.value ? Number(e.target.value) : null })} />
         <input className="rounded-xl border border-line px-3 py-2" placeholder="Số điện thoại/email khách (tuỳ chọn)" value={form.customerIdentifier ?? ""} onChange={(e) => setForm({ ...form, customerIdentifier: e.target.value || null })} />
         <input className="rounded-xl border border-line px-3 py-2" placeholder="ID sản phẩm áp dụng (cách nhau bằng dấu phẩy, bỏ trống = tất cả)" value={productIdsText} onChange={(e) => setProductIdsText(e.target.value)} />
-        <input type="datetime-local" className="rounded-xl border border-line px-3 py-2" value={form.startsAt} onChange={(e) => setForm({ ...form, startsAt: e.target.value })} />
-        <input type="datetime-local" className="rounded-xl border border-line px-3 py-2" value={form.expiresAt ?? ""} onChange={(e) => setForm({ ...form, expiresAt: e.target.value || null })} />
-        <textarea className="rounded-xl border border-line px-3 py-2 md:col-span-2" placeholder="Mô tả" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+        <label className="text-sm font-semibold">Bắt đầu từ<input type="datetime-local" className="mt-1 w-full rounded-xl border border-line px-3 py-2" value={form.startsAt} onChange={(e) => setForm({ ...form, startsAt: e.target.value })} /></label>
+        <label className="text-sm font-semibold">Hết hạn lúc (tuỳ chọn)<input type="datetime-local" className="mt-1 w-full rounded-xl border border-line px-3 py-2" value={form.expiresAt ?? ""} onChange={(e) => setForm({ ...form, expiresAt: e.target.value || null })} /></label>
+        <textarea className="rounded-xl border border-line px-3 py-2 md:col-span-2" placeholder="Mô tả voucher, ví dụ: Cảm ơn bạn đã ủng hộ LovelyBar" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
         <p className="text-sm text-ink-soft md:col-span-2">Mỗi đơn hàng chỉ được sử dụng một voucher.</p>
         <button disabled={busy} className="btn-primary md:col-start-2">{busy ? "Đang tạo..." : "Tạo voucher"}</button>
       </form>

@@ -255,7 +255,6 @@ function toVoucher(row: any): Voucher {
   return {
     id: Number(row.id), code: row.code, name: row.name, description: row.description ?? "",
     discountValue: Number(row.discount_value ?? row.discountValue),
-    minimumOrderAmount: Number(row.minimum_order_amount ?? 0),
     usageLimit: row.usage_limit == null ? null : Number(row.usage_limit),
     usedCount: Number(row.used_count ?? 0), customerIdentifier: row.customer_identifier ?? null,
     startsAt: row.starts_at, expiresAt: row.expires_at ?? null, isActive: Boolean(row.is_active),
@@ -645,7 +644,7 @@ export const api = {
         const { data, error } = await supabase.from("vouchers").insert({
           code: input.code.trim().toUpperCase(), name: input.name.trim(), description: input.description,
           discount_type: "PERCENTAGE", discount_value: input.discountValue,
-          max_discount_amount: null, minimum_order_amount: input.minimumOrderAmount,
+          max_discount_amount: null,
           usage_limit: input.usageLimit, customer_identifier: input.customerIdentifier?.trim().toLowerCase() || null,
           starts_at: input.startsAt, expires_at: input.expiresAt, is_active: input.isActive,
         }).select("*").single();
@@ -663,7 +662,7 @@ export const api = {
         const { data, error } = await supabase.from("vouchers").update({
           code: input.code.trim().toUpperCase(), name: input.name.trim(), description: input.description,
           discount_type: "PERCENTAGE", discount_value: input.discountValue,
-          max_discount_amount: null, minimum_order_amount: input.minimumOrderAmount,
+          max_discount_amount: null,
           usage_limit: input.usageLimit, customer_identifier: input.customerIdentifier?.trim().toLowerCase() || null,
           starts_at: input.startsAt, expires_at: input.expiresAt, is_active: input.isActive,
           updated_at: new Date().toISOString(),
