@@ -17,7 +17,6 @@ export default function Cart() {
   const navigate = useNavigate();
   const [creatingOrder, setCreatingOrder] = useState(false);
   const [voucherCode, setVoucherCode] = useState("");
-  const [customerIdentifier, setCustomerIdentifier] = useState("");
   const total = items.reduce(
     (sum, item) => sum + getSalePrice(item.price, saleActive) * item.quantity,
     0,
@@ -33,7 +32,6 @@ export default function Cart() {
           quantity: item.quantity,
         })),
         voucherCode,
-        customerIdentifier,
       );
       clear();
       navigate(`/checkout?order=${encodeURIComponent(order.orderCode)}`);
@@ -141,15 +139,6 @@ export default function Cart() {
             className="mt-4 w-full rounded-xl border border-line px-3 py-2 uppercase outline-none focus:border-pink-500"
             maxLength={40}
           />
-          {voucherCode && (
-            <input
-              value={customerIdentifier}
-              onChange={(event) => setCustomerIdentifier(event.target.value)}
-              placeholder="Số điện thoại hoặc email (nếu cần)"
-              className="mt-2 w-full rounded-xl border border-line px-3 py-2 outline-none focus:border-pink-500"
-              maxLength={200}
-            />
-          )}
         </aside>
 
         <aside className="card h-fit p-5 lg:sticky lg:top-24">

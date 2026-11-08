@@ -85,7 +85,6 @@ export interface Voucher {
   discountValue: number
   usageLimit: number | null
   usedCount: number
-  customerIdentifier: string | null
   startsAt: string
   expiresAt: string | null
   isActive: boolean
@@ -99,7 +98,6 @@ export interface VoucherInput {
   description: string
   discountValue: number
   usageLimit: number | null
-  customerIdentifier: string | null
   startsAt: string
   expiresAt: string | null
   isActive: boolean

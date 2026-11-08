@@ -15,7 +15,6 @@ const empty: VoucherInput = {
   description: "",
   discountValue: 0,
   usageLimit: null,
-  customerIdentifier: null,
   startsAt: new Date().toISOString().slice(0, 16),
   expiresAt: null,
   isActive: true,
@@ -142,7 +141,6 @@ export default function AdminVouchers() {
         description: voucher.description,
         discountValue: voucher.discountValue,
         usageLimit: voucher.usageLimit,
-        customerIdentifier: voucher.customerIdentifier,
         startsAt: toDateTimeLocal(voucher.startsAt),
         expiresAt: voucher.expiresAt ? toDateTimeLocal(voucher.expiresAt) : null,
         isActive: voucher.isActive,
@@ -238,14 +236,6 @@ export default function AdminVouchers() {
                 onChange={(event) =>
                   setField("usageLimit", event.target.value ? Number(event.target.value) : null)
                 }
-              />
-            </Field>
-            <Field label="Khách hàng nhận voucher" hint="Bỏ trống nếu khách nào cũng có thể dùng mã.">
-              <input
-                className="mt-1 w-full rounded-xl border border-line px-3 py-2"
-                placeholder="Số điện thoại hoặc email"
-                value={form.customerIdentifier ?? ""}
-                onChange={(event) => setField("customerIdentifier", event.target.value || null)}
               />
             </Field>
           </div>
@@ -346,7 +336,6 @@ export default function AdminVouchers() {
               <th className="pb-3">Mã</th>
               <th>Giảm</th>
               <th>Đã dùng</th>
-              <th>Khách hàng</th>
               <th>Trạng thái</th>
               <th />
             </tr>
@@ -360,7 +349,6 @@ export default function AdminVouchers() {
                 </td>
                 <td>{voucher.discountValue}%</td>
                 <td>{voucher.usedCount}/{voucher.usageLimit ?? "∞"}</td>
-                <td>{voucher.customerIdentifier ?? "Tất cả"}</td>
                 <td>{voucher.isActive ? "Đang bật" : "Đã tắt"}</td>
                 <td>
                   <div className="flex gap-2">

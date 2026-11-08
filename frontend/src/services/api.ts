@@ -256,7 +256,7 @@ function toVoucher(row: any): Voucher {
     id: Number(row.id), code: row.code, name: row.name, description: row.description ?? "",
     discountValue: Number(row.discount_value ?? row.discountValue),
     usageLimit: row.usage_limit == null ? null : Number(row.usage_limit),
-    usedCount: Number(row.used_count ?? 0), customerIdentifier: row.customer_identifier ?? null,
+    usedCount: Number(row.used_count ?? 0),
     startsAt: row.starts_at, expiresAt: row.expires_at ?? null, isActive: Boolean(row.is_active),
     createdAt: row.created_at,
     productIds: Array.isArray(row.product_ids) ? row.product_ids.map(Number) : [],
@@ -522,10 +522,10 @@ export const api = {
       { type: "BANK", code: "BANK", name: "Chuyển khoản ngân hàng (VietQR)" },
     ] as PaymentMethod[]),
 
-  createOrder: (items: { productId: number; quantity: number }[], voucherCode?: string, customerIdentifier?: string) =>
+  createOrder: (items: { productId: number; quantity: number }[], voucherCode?: string) =>
     request<Order>(async () => {
       const { data, error } = await supabase.rpc("create_order", {
-        items, voucher_code_input: voucherCode || null, customer_identifier_input: customerIdentifier || null,
+        items, voucher_code_input: voucherCode || null,
       });
       return { data: data ? toOrder(data) : null, error };
     }),
@@ -645,7 +645,7 @@ export const api = {
           code: input.code.trim().toUpperCase(), name: input.name.trim(), description: input.description,
           discount_type: "PERCENTAGE", discount_value: input.discountValue,
           max_discount_amount: null,
-          usage_limit: input.usageLimit, customer_identifier: input.customerIdentifier?.trim().toLowerCase() || null,
+          usage_limit: input.usageLimit,
           starts_at: input.startsAt, expires_at: input.expiresAt, is_active: input.isActive,
         }).select("*").single();
         if (error || !data) return { data: null, error };
@@ -663,7 +663,7 @@ export const api = {
           code: input.code.trim().toUpperCase(), name: input.name.trim(), description: input.description,
           discount_type: "PERCENTAGE", discount_value: input.discountValue,
           max_discount_amount: null,
-          usage_limit: input.usageLimit, customer_identifier: input.customerIdentifier?.trim().toLowerCase() || null,
+          usage_limit: input.usageLimit,
           starts_at: input.startsAt, expires_at: input.expiresAt, is_active: input.isActive,
           updated_at: new Date().toISOString(),
         }).eq("id", id).select("*").single();
